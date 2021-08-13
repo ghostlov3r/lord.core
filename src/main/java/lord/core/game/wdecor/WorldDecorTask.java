@@ -1,0 +1,228 @@
+package lord.core.game.wdecor;
+
+import cn.nukkit.block.Block;
+import cn.nukkit.level.Level;
+import cn.nukkit.level.format.FullChunk;
+import cn.nukkit.level.generator.object.tree.ObjectBigSpruceTree;
+import cn.nukkit.level.generator.object.tree.ObjectJungleTree;
+import cn.nukkit.level.generator.object.tree.ObjectOakTree;
+import cn.nukkit.level.generator.object.tree.ObjectSpruceTree;
+import cn.nukkit.scheduler.Task;
+import lord.core.LordCore;
+
+import static lord.core.game.wdecor.WorldDecor.nukkitRandom;
+import static lord.core.game.wdecor.WorldDecor.random;
+
+public class WorldDecorTask extends Task {
+	
+	private FullChunk chunk;
+	private Level level;
+	private WorldDecor decor;
+	
+	protected WorldDecorTask (FullChunk chunk, WorldDecor decor) {
+		this.chunk = chunk;
+		this.level = chunk.getProvider().getLevel();
+		this.decor = decor;
+	}
+	
+	@Override
+	public void onRun (int i)
+	{
+		if (this.chunk.isGenerated() && this.level.isChunkLoaded(this.chunk.getX(), this.chunk.getZ()))
+			this.decorate(this.chunk);
+		else
+			this.decor.delayedDecorate(this.chunk);
+	}
+	
+	// TREES
+	private static final short TREE_BIG_SPRUCE = 1; // большая ёлка
+	private static ObjectBigSpruceTree bigSpruceTree = new ObjectBigSpruceTree(0.7f, 20);
+	
+	private static final short TREE_SMALL_SPRUCE = 2; // малая ёлка
+	private static ObjectSpruceTree spruceTree = new ObjectSpruceTree();
+	
+	private static final short TREE_SMALL_JUNGLE = 3; //
+	private static ObjectJungleTree jungleTree = new ObjectJungleTree();
+	
+	private static final short TREE_SMALL_OAK = 4; // дуб
+	private static ObjectOakTree oakTree = new ObjectOakTree();
+	
+	/** Посадить дерево */
+	private void plantTree (int x, int y, int z, short type) {
+		if (!this.canPlaceHere(x, y, z, 3)) return;
+		switch (type) {
+			case TREE_BIG_SPRUCE:
+				bigSpruceTree.placeObject(this.level, x, y, z, nukkitRandom);
+				break;
+			case TREE_SMALL_SPRUCE:
+				spruceTree.placeObject(this.level, x, y, z, nukkitRandom);
+				break;
+			case TREE_SMALL_JUNGLE:
+				jungleTree.placeObject(this.level, x, y, z, nukkitRandom);
+				break;
+			case TREE_SMALL_OAK:
+				oakTree.placeObject(this.level, x, y, z, nukkitRandom);
+				break;
+		}
+	}
+	
+	/** Поставить булыжник */
+	private void placeBuliga (int x, int y, int z) {
+		if (!this.canPlaceHere(x, y, z, 2)) return;
+		
+		int id = 48; // MOSSY_COBBLESTONE
+		this.level.setBlockAt(x, y, z, id);
+		
+		if (random.nextInt(4) == 1) {
+			this.level.setBlockAt(x, y+1, z, id); // Блок сверху
+		}
+		
+		int minus = 1;
+		
+		int minX = x - minus;
+		int minZ = z - minus;
+		
+		int maxX = x + minus;
+		int maxZ = z + minus;
+		
+		for (int X = minX; X <= maxX; X++) {
+			for (int Z = minZ; Z <= maxZ; Z++) {
+				if (random.nextInt(4) == 1) {
+					this.level.setBlockAt(X, y, Z, id);
+				}
+			}
+		}
+	}
+	
+	/** FALSE если сюда нельзя ставить обьект */
+	private boolean canPlaceHere (int x, int y, int z, int radius) {
+		int minX = x - radius;
+		int minZ = z - radius;
+		
+		int maxX = x + radius;
+		int maxZ = z + radius;
+		
+		for (int X = minX; X <= maxX; X++) {
+			for (int Z = minZ; Z <= maxZ; Z++) {
+				if (this.level.getBlockIdAt(X, y, Z) != Block.AIR) return false;
+			}
+		}
+		return true;
+	}
+	
+	private void decorate (FullChunk chunk) {
+		int minX = chunk.getX() << 4;
+		int minZ = chunk.getZ() << 4;
+		
+		int maxX = minX + 16;
+		int maxZ = minZ + 16;
+		
+		long start = System.currentTimeMillis();
+		
+		for (int Y = WorldDecor.MAX_Y; Y >= WorldDecor.MIN_Y; Y--) {
+			for (int X = minX; X != maxX; X++) {
+				for (int Z = minZ; Z != maxZ; Z++) {
+					this.processBlock(X, Y, Z);
+				}
+			}
+		}
+		
+		LordCore.log.info("Chunk [" + chunk.getX() + "/" + chunk.getZ() + "] took " + (System.currentTimeMillis() - start) + " ms");
+	}
+	
+	private void processBlock (int x, int y, int z) {
+		int blockID = this.level.getBlockIdAt(x, y, z);
+		
+		// трава -> подзол/вспах
+		if (Block.GRASS == blockID) {
+			switch (random.nextInt(4)) {
+				case 4:
+				case 3:
+					this.level.setBlockAt(x, y, z, Block.PODZOL);
+					break;
+				case 2:
+				case 1:
+					this.level.setBlockAt(x, y, z, Block.GRASS_PATH); // вспаханная
+					break;
+					// сажаются цветы на обычную траву
+				default:
+					if (random.nextInt(20) == 1) {
+						if (random.nextInt(2) == 1)
+							this.level.setBlockAt(x, y + 1, z, Block.FLOWER); // желтый
+						else
+							this.level.setBlockAt(x, y + 1, z, Block.RED_FLOWER); // красный
+						}
+					break;
+			}
+			// деревья
+			if (random.nextInt(67) == 1) {
+				if (random.nextInt(2) == 1) {
+					this.plantTree(x, y, z, TREE_SMALL_OAK);
+				} else {
+					this.plantTree(x, y, z, TREE_SMALL_JUNGLE);
+				}
+			}
+				
+			if (random.nextInt(73) == 1) {
+				this.placeBuliga(x, y + 1, z);
+			}
+		}
+				
+			// вода -> воздух
+		if ((Block.WATER == blockID) || (Block.STILL_WATER == blockID)) {
+			this.level.setBlockIdAt(x, y, z, Block.AIR);
+			int underWater = this.level.getBlockIdAt(x, y - 1, z);
+			if (Block.DIRT == underWater) {
+				int block = (random.nextInt(2) == 1) ? Block.PODZOL : Block.MYCELIUM; // подзол или мицелий вместо земли
+				this.level.setBlockAt(x, y - 1, z, block);
+				if (block == Block.PODZOL) {
+					if (random.nextInt(20) == 1) {
+						if (random.nextInt(2) == 1) {
+							this.level.setBlockAt(x, y, z, Block.RED_FLOWER, 7);
+						} else {
+							this.level.setBlockAt(x, y, z, Block.RED_MUSHROOM);
+						}
+					}
+				}
+					
+				if (random.nextInt(37) == 1) {
+					if (random.nextInt(3) == 1) {
+						this.plantTree(x, y, z, TREE_BIG_SPRUCE);
+					} else {
+						this.plantTree(x, y, z, TREE_SMALL_SPRUCE);
+					}
+				}
+				
+				if (random.nextInt(70) == 1) {
+					this.placeBuliga(x, y, z);
+				}
+			}
+			if (Block.STONE == underWater) {
+				int block1 = (random.nextInt(2) == 1) ? Block.GRASS : Block.GRASS_PATH; // трава или хуита вместо камня
+				this.level.setBlockAt(x, y - 1, z, block1);
+				this.level.setBlockAt(x, y - 2, z, Block.DIRT); // землю под траву
+			}
+		}
+		
+		// кувшинки -> воздух
+		if (Block.WATER_LILY == blockID) {
+			this.level.setBlockAt(x, y, z, Block.AIR);
+		}
+			
+		// песок
+		if (Block.SAND == blockID) {
+			if (this.level.getBlockIdAt(x, y+1, z) == Block.AIR) {
+				if (random.nextInt(42) == 1) {
+					this.level.setBlockAt(x, y + 1, z, Block.DEAD_BUSH); // кустарник
+				}
+				if (random.nextInt(200) == 1) {
+					this.level.setBlockAt(x, y + 1, z, Block.SKULL_BLOCK); // голова скелета
+				}
+				if (random.nextInt(6) == 1) {
+					this.level.setBlockAt(x, y, z, Block.SANDSTONE); // блок кирпичи из песка
+				}
+			}
+		}
+	}
+	
+}
