@@ -1,7 +1,6 @@
 package lord.core.game.kit;
 
 import lombok.Getter;
-import lombok.var;
 
 /**
  * Информация об эффекте из набора

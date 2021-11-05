@@ -1,43 +1,36 @@
 package lord.core.minigame;
 
+import dev.ghostlov3r.beengine.utils.config.Config;
+import dev.ghostlov3r.beengine.utils.config.Name;
 import lombok.Getter;
-import lord.core.mgrbase.entry.LordConfig;
-import lord.core.minigame.arena.ArenaDurations;
 
 /**
  * Базовая конфигурация миниигры
- * @param <ArenaMan>
  */
-@Getter
-public abstract class MiniGameConfig<ArenaMan extends LordArenaMan>
-	extends LordConfig<ArenaMan> {
+@Name("mg_config")
+public abstract class MiniGameConfig extends Config {
+
+	public String stateStandBy = "Ожидание";
+	public String stateStandByExtra = "";
+
+	public String stateWait = "Ожидание";
+	public String stateWaitExtra = "";
 	
-	private String stateWait = "Ожидание";
-	private String stateWaitExtra = "";
+	public String stateWaitEnd = "Игра начинается...";
+	public String stateWaitEndExtra = "";
 	
-	private String stateWaitEnd = "Игра начинается...";
-	private String stateWaitEndExtra = "";
+	public String statePreGame = "Игра начинается...";
+	public String statePreGameExtra = "";
 	
-	private String statePreGame = "Игра начинается...";
-	private String statePreGameExtra = "";
+	public String stateGame = "Идёт игра";
+	public String stateGameExtra = "";
 	
-	private String stateGame = "Идёт игра";
-	private String stateGameExtra = "";
-	
-	private String stateGameEnd = "Конец игры";
-	private String stateGameEndExtra = "";
-	
-	private String stateReload = "Перезагрузка...";
-	private String stateReloadExtra = "";
-	
-	/* ======================================================================================= */
-	
-	private ArenaDurations durations = ArenaDurations.createForMGConfig();
-	
-	private boolean overrideArenaDurations = false;
+	public String stateGameEnd = "Конец игры";
+	public String stateGameEndExtra = "";
 	
 	/* ======================================================================================= */
-	
-	private boolean backupWorlds = false;
-	
+
+	public String waitLobbyName;
+
+	public String menuItemDecorSymbol = "◆";
 }

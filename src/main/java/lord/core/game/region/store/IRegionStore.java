@@ -1,13 +1,13 @@
 package lord.core.game.region.store;
 
-import cn.nukkit.block.Block;
+import dev.ghostlov3r.math.Vector3;
 import lord.core.game.region.Region;
 
 import java.util.function.Consumer;
 
 public interface IRegionStore {
 	
-	Region getRegion (Block block);
+	Region getRegion (Vector3 pos);
 	
 	Region getRegion (int x, int z);
 	

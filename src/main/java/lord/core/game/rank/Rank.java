@@ -1,14 +1,18 @@
 package lord.core.game.rank;
 
+import dev.ghostlov3r.common.DiskEntry;
+import dev.ghostlov3r.common.DiskMap;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lord.core.mgrbase.entry.LordEntryF;
-import org.jetbrains.annotations.Nullable;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import javax.annotation.Nullable;
 
-@Getter @Builder @NoArgsConstructor
-public class Rank extends LordEntryF<RankMan> {
-	
+@Accessors(fluent = true, chain = true)
+@Getter
+@Setter
+public class Rank extends DiskEntry<Integer> {
+
 	/** Имя предыдущего ранга   */  @Nullable private String     prevName;
 	/** Имя следующего ранга    */  @Nullable private String     nextName;
 	/** Выдается новым игрокам  */            private boolean    isDefault;
@@ -17,8 +21,12 @@ public class Rank extends LordEntryF<RankMan> {
 	/** Имя или описание ранга  */  @Nullable private String     rankText;
 	/** Сообщение при получении */  @Nullable private String     onGetMessage;
 	/** Список прав             */  @Nullable protected String[] permissions;
-	
-	
+
+	public Rank(DiskMap<Integer, ?> map, Integer key) {
+		super(map, key);
+	}
+
+
 	public boolean hasPrev () {
 		return !(null == this.prevName || "".equals(this.prevName));
 	}
@@ -28,11 +36,11 @@ public class Rank extends LordEntryF<RankMan> {
 	}
 	
 	public Rank getPrev () {
-		return this.getManager().get(this.prevName);
+		return (Rank) this.map().get(this.prevName);
 	}
 	
 	public Rank getNext () {
-		return this.getManager().get(this.nextName);
+		return (Rank) this.map().get(this.nextName);
 	}
 	
 }

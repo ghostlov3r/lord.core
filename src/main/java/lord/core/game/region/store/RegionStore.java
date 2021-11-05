@@ -1,6 +1,6 @@
 package lord.core.game.region.store;
 
-import cn.nukkit.block.Block;
+import dev.ghostlov3r.math.Vector3;
 import lord.core.game.region.Region;
 
 import java.util.HashMap;
@@ -24,8 +24,8 @@ public class RegionStore implements IRegionStore {
 	
 	/** Возвращает регион по блоку */
 	@Override
-	public Region getRegion (Block block) {
-		return this.getRegion(block.getChunkX(), block.getChunkZ());
+	public Region getRegion (Vector3 block) {
+		return this.getRegion(block.chunkX(), block.chunkZ());
 	}
 	
 	/** Возвращает регион по координатам чанка */

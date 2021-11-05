@@ -1,15 +1,14 @@
 package lord.core.game.warp;
 
-import cn.nukkit.Player;
-import cn.nukkit.level.Location;
-import cn.nukkit.utils.TextFormat;
+import dev.ghostlov3r.beengine.entity.util.Location;
+import dev.ghostlov3r.beengine.player.Player;
+import dev.ghostlov3r.beengine.utils.TextFormat;
+import dev.ghostlov3r.common.DiskMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lord.core.LordCore;
-import lord.core.command.service.LordCommand;
 import lord.core.gamer.Gamer;
-import lord.core.mgrbase.manager.LordManFCA;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,22 +16,27 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 @Getter
-public class WarpMan extends LordManFCA<Warp, WarpConfig, LordCore> {
+public class WarpMan extends DiskMap<String, Warp> {
 	
 	@Setter @Accessors(fluent = true)
 	private BiConsumer<Player, Warp> onWarpCreate;
 	
 	@Setter @Accessors(fluent = true)
 	private Function<Gamer, List<String>> playerWarpNames;
+
+	private WarpConfig config;
 	
 	public WarpMan () {
-		getConfig().getForceLoadNames().forEach(this::loadToMap);
+		super(LordCore.instance().dataPath().resolve("warps"), Warp.class);
+		enableAutoLoad();
+		config = WarpConfig.loadFromDir(path().resolve("cfg"), WarpConfig.class);
+		config.getForceLoadNames().forEach(this::load);
 	}
 	
-	@Override
+	/*@Override
 	protected LordCommand cmdInternal () {
 		return new WarpCommand();
-	}
+	}*/
 	
 	public boolean teleportOrMess (Player player, String warpName) {
 		Warp warp = get(warpName);
@@ -55,7 +59,7 @@ public class WarpMan extends LordManFCA<Warp, WarpConfig, LordCore> {
 	 * @param open Публичный ли варп
 	 */
 	public Warp create (String name, Player player, boolean open) {
-		return create(name, player.getLocation(), player.getName(), open);
+		return create(name, player, player.name(), open);
 	}
 	
 	/**
@@ -66,17 +70,13 @@ public class WarpMan extends LordManFCA<Warp, WarpConfig, LordCore> {
 	 * @param open Публичный ли варп
 	 */
 	public Warp create (String name, Location loc, String owner, boolean open) {
-		Warp warp = new Warp();
-		warp.x = loc.getX();
-		warp.y = loc.getY();
-		warp.z = loc.getZ();
-		warp.yaw = loc.getYaw();
-		warp.pitch = loc.getPitch();
-		warp.worldName = loc.getLevel().getName();
+		Warp warp = new Warp(this, name);
+		warp.location = loc.toLocation();
+		warp.location.setWorld(null);
+		warp.worldName = loc.world().folderName();
 		warp.opened = open;
 		warp.ownerName = owner;
 		warp.whiteList = new ArrayList<>();
-		warp.finup(name, this);
 		return warp;
 	}
 	

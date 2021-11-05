@@ -2,8 +2,8 @@ package lord.core.game.sanction;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -14,7 +14,8 @@ import java.util.List;
 public class ReportData {
 	
 	/** Имена-ID отправленных репортов */
-	@Nullable private List<String> sentIDs;
+	@Nullable
+	private List<String> sentIDs;
 	
 	/** Имена-ID пришедших репортов */
 	@Nullable private List<String> inboxIDs;

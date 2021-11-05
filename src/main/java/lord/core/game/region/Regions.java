@@ -1,26 +1,31 @@
 package lord.core.game.region;
 
-import cn.nukkit.entity.Entity;
-import cn.nukkit.event.block.BlockBreakEvent;
-import cn.nukkit.event.block.BlockPlaceEvent;
-import cn.nukkit.event.block.DoorToggleEvent;
-import cn.nukkit.event.entity.EntityDamageByEntityEvent;
-import cn.nukkit.event.level.ChunkLoadEvent;
-import cn.nukkit.event.level.ChunkUnloadEvent;
-import cn.nukkit.level.format.FullChunk;
+import dev.ghostlov3r.beengine.Beengine;
+import dev.ghostlov3r.beengine.block.blocks.BlockDoor;
+import dev.ghostlov3r.beengine.entity.Entity;
+import dev.ghostlov3r.beengine.event.EventListener;
+import dev.ghostlov3r.beengine.event.EventManager;
+import dev.ghostlov3r.beengine.event.block.BlockBreakEvent;
+import dev.ghostlov3r.beengine.event.block.BlockPlaceEvent;
+import dev.ghostlov3r.beengine.event.entity.EntityDamageByEntityEvent;
+import dev.ghostlov3r.beengine.event.player.PlayerInteractBlockEvent;
+import dev.ghostlov3r.beengine.event.world.ChunkLoadEvent;
+import dev.ghostlov3r.beengine.event.world.ChunkUnloadEvent;
+import dev.ghostlov3r.beengine.world.Chunk;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.val;
 import lord.core.LordCore;
 import lord.core.game.region.store.IRegionStore;
 import lord.core.game.region.store.RegionStore;
-import lord.core.api.EventApi;
-import lord.core.util.file.AdvFile;
-import lord.core.util.file.AdvFolder;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class Regions {
 	
 	/** Папка regions */
-	public final AdvFolder FOLDER;
+	public final Path FOLDER;
 	
 	@Setter
 	private RegionActions actions;
@@ -31,9 +36,10 @@ public class Regions {
 	
 	private boolean logEnabled;
 	
+	@SneakyThrows
 	public Regions (boolean withLoader) {
-		this.FOLDER = LordCore.FOLDER.getChild("regions");
-		this.FOLDER.mkdirIfNot();
+		this.FOLDER = LordCore.instance().dataPath().resolve("regions");
+		Files.createDirectories(FOLDER);
 		
 		this.actions = new RegionActions();
 		this.store = new RegionStore();
@@ -42,76 +48,112 @@ public class Regions {
 		if (withLoader) {
 			this.enableLoader();
 		}
-		
-		this.registerListeners();
-	}
-	
-	private void registerListeners () {
-		EventApi.onBlockPlace(ev -> { val event = (BlockPlaceEvent) ev;
-			if (!this.actions.onBuild()) { // todo
-				event.setCancelled();
+
+
+		EventManager.get().register(LordCore.instance(), new EventListener() {
+			@Override
+			public void onBlockPlace(BlockPlaceEvent event) {
+				if (!actions.onBuild()) { // todo
+					event.cancel();
+				}
+
+				/*
+				if (!Region.playerCanBuild(event.getPlayer().getName(), event.getBlock())) {
+			event.setCancelled(true);
+			event.getPlayer().sendTip("Регион под защитой");
+		}
+				 */
 			}
-		});
-		EventApi.onBlockBreak(ev -> { val event = (BlockBreakEvent) ev;
-			if (!this.actions.onBuild()) { // todo
-				event.setCancelled();
-			}
-		});
-		EventApi.onEntityDamageByEntity(ev -> { val event = (EntityDamageByEntityEvent) ev;
-			Entity damager = event.getDamager();
-			Entity entity = event.getEntity();
-			
-			if (!this.actions.onDamage()) { // todo
-				event.setCancelled();
-			}
-		});
-		EventApi.onDoorToggle(ev -> { val event = (DoorToggleEvent) ev;
-			Region region = this.store.getRegion(event.getBlock());
-			
-			if (!this.actions.onDoor()) { // todo
-				event.setCancelled();
-			}
-		});
-		
-		// TODO chest
-	}
-	
-	/** Включает загрузку с диска, сохранение и выгрузку */
-	public void enableLoader () {
-		if (this.loaderEnabled) {
+
+			@Override
+			public void onBlockBreak(BlockBreakEvent event) {
+				if (!actions.onBuild()) { // todo
+					event.cancel();
+				}
+
+				/*
+				Player player = event.getPlayer();
+		String name = player.getName();
+		if (!Region.playerCanBuild(name, event.getBlock())) {
+			event.setCancelled(true);
+			player.sendTip("РЕГИОН ПОД ЗАЩИТОЙ");
 			return;
 		}
-		
-		EventApi.onChunkLoad(ev -> { val event = (ChunkLoadEvent) ev;
-			FullChunk chunk = event.getChunk();
-			this.tryLoadRegion(chunk.getX(), chunk.getZ());
+		int reward = 0;
+		int id = event.getBlock().getId();
+		if (Block.COAL_ORE == id)    reward = 1;
+		if (Block.IRON_ORE == id)    reward = 2;
+		if (Block.GOLD_ORE == id)    reward = 3;
+		if (Block.DIAMOND_ORE == id) reward = 4;
+		if (Block.EMERALD_ORE == id) reward = 5;
+
+		if (reward != 0) {
+			Gamer.get(name).addMoney(reward);
+			player.sendTip("+ " + reward + " Koins");
+		}
+				 */
+			}
+
+			@Override
+			public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+				Entity damager = event.damager();
+				Entity entity = event.entity();
+
+				if (!actions.onDamage()) { // todo
+					event.cancel();
+				}
+			}
+
+			@Override
+			public void onPlayerInteractBlock(PlayerInteractBlockEvent event) {
+				if (event.blockTouched() instanceof BlockDoor) {
+					if (!actions.onDoor()) { // todo
+						event.cancel();
+					}
+				}
+			}
+
+			@Override
+			public void onChunkLoad(ChunkLoadEvent event) {
+				if (loaderEnabled) {
+					Chunk chunk = event.chunk();
+					tryLoadRegion(chunk.x(), chunk.z());
+				}
+			}
+
+			@Override
+			public void onChunkUnload(ChunkUnloadEvent event) {
+				if (loaderEnabled) {
+					Chunk chunk = event.chunk();
+					tryUnloadRegion(chunk.x(), chunk.z());
+				}
+			}
 		});
-		EventApi.onChunkUnload(ev -> { val event = (ChunkUnloadEvent) ev;
-			FullChunk chunk = event.getChunk();
-			this.tryUnloadRegion(chunk.getX(), chunk.getZ());
-		});
-		
-		this.loaderEnabled = true;
+	}
+
+	/** Включает загрузку с диска, сохранение и выгрузку */
+	public void enableLoader () {
+		loaderEnabled = true;
 	}
 	
 	/** Возвращает AdvFile региона */
-	public AdvFile regionFile (int x, int z) {
-		return this.FOLDER.getFile(x + "_" + z + ".json");
+	public Path regionFile (int x, int z) {
+		return this.FOLDER.resolve(x + "_" + z + ".json");
 	}
 	
 	/** Загружает регион в Store, вернет Null если файла нет. */
+	@SneakyThrows
 	public Region tryLoadRegion (int x, int z) {
-		AdvFile regionFile = this.regionFile(x, z);
-		if (!regionFile.exists()) {
+		Path regionFile = this.regionFile(x, z);
+		if (!Files.exists(regionFile)) {
 			return null;
 		}
-		Region region = regionFile.readJson(Region.class);
-		if (region != null) {
-			region.x = x;
-			region.z = z;
-			this.store.putRegionToMap(region);
-			if (this.logEnabled) LordCore.log.info("Loaded region " + region.x + "/" + region.z);
-		}
+		Region region = Beengine.JSON_MAPPER.readValue(regionFile.toFile(), Region.class);
+
+		region.x = x;
+		region.z = z;
+		this.store.putRegionToMap(region);
+		if (this.logEnabled) LordCore.log.info("Loaded region " + region.x + "/" + region.z);
 		return region;
 	}
 	

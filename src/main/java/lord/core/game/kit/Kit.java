@@ -1,20 +1,21 @@
 package lord.core.game.kit;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import dev.ghostlov3r.common.DiskEntry;
+import dev.ghostlov3r.common.DiskMap;
 import lombok.Getter;
-import lombok.var;
-import lord.core.util.json.JsonSkip;
-import lord.core.mgrbase.entry.LordEntryF;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 @Getter
-public class Kit extends LordEntryF<KitMan> {
+public class Kit extends DiskEntry<String> {
 	
 	/** Право на использование, пустое - право не нужно */
-	@Nullable protected String permission;
+	@Nullable
+	protected String permission;
 	
 	/** Информация о предметах */
 	@Nullable protected ArrayList<KitItemData> items;
@@ -44,16 +45,17 @@ public class Kit extends LordEntryF<KitMan> {
 	protected int minutes;
 	
 	/** Кулдаун в миллисекунлах */
-	@JsonSkip private long cooldown;
+	@JsonIgnore
+	private long cooldown;
 	
 	/** Имя игрока -> Следующее использование */
 	protected Map<String, Long> times;
-	
-	@Override
-	public void finup (String name, KitMan manager) {
-		super.finup(name, manager);
+
+	public Kit(DiskMap<String, ?> map, String key) {
+		super(map, key);
+
 		this.cooldown = (this.hours * 60 * 60 * 1000) + (this.minutes * 60 * 1000);
-		if (manager.getConfig().isSaveTimes()) {
+		if (((KitMan)map).getConfig().isSaveTimes()) {
 			deleteExpiredEntries();
 		} else {
 			times = new HashMap<>();

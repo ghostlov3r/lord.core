@@ -1,11 +1,10 @@
 package lord.core.minigame.arena;
 
+import dev.ghostlov3r.common.Utils;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.val;
-import lord.core.minigame.LordArenaMan;
+import lombok.experimental.Accessors;
 import lord.core.minigame.MiniGameConfig;
-import lord.core.util.Util;
 
 /**
  * Варианты состояния Lord-Арены.
@@ -14,30 +13,25 @@ import lord.core.util.Util;
  *
  * @author ghostlov3r
  */
+@Accessors(fluent = true)
 @Getter
 public enum ArenaState {
 	
-	WAIT,  WAIT_END,  PRE_GAME,  GAME,  GAME_END,  RELOAD;
+	STAND_BY, WAIT,  WAIT_END,  PRE_GAME,  GAME,  GAME_END;
 	
 	@Setter private String     text      = "";
 	@Setter private String     extraText = "";
 			private ArenaState next      = null;
-	
-	private ArenaState finup (MiniGameConfig config, ArenaState next) {
-		this.next = next;
-		this.text = (String) Util.invoke(config, "getState" + Util.upperNameToCamel(this.name()));
-		return this;
+
+	private void initData (MiniGameConfig config) {
+		text = (String) Utils.invoke(config, "getState" + Utils.camelName(this));
+		next = values()[(ordinal() + 1) % values().length];
 	}
 	
-	public static void init (LordArenaMan<?, ?, ?> manager) {
-		val cfg = manager.getConfig();
-		
-		WAIT.finup(cfg,
-			WAIT_END.finup(cfg,
-				PRE_GAME.finup(cfg,
-					GAME.finup(cfg,
-						GAME_END.finup(cfg,
-							RELOAD.finup(cfg, WAIT))))));
+	public static void init (MiniGameConfig config) {
+		for (ArenaState state : values()) {
+			state.initData(config);
+		}
 	}
 	
 }

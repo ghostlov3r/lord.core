@@ -1,17 +1,20 @@
 package lord.core.game.sanction;
 
-import lombok.Builder;
+import dev.ghostlov3r.common.DiskEntry;
+import dev.ghostlov3r.common.DiskMap;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lord.core.mgrbase.entry.LordEntryF;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 /**
  * Элемент ReportManager - менеджера репортов
  * Информация об отправленной жалобе
  * @author ghostlov3r
  */
-@Getter @Builder @NoArgsConstructor
-public class Report extends LordEntryF<ReportManager> {
+@Accessors(fluent = true, chain = true)
+@Getter
+@Setter
+public class Report extends DiskEntry<String> {
 	
 	/** ID правила, которое нарушила цель */
 	private String ruleID;
@@ -27,5 +30,8 @@ public class Report extends LordEntryF<ReportManager> {
 	
 	/** Время отправления жалобы */
 	private long sentTime;
-	
+
+	public Report(DiskMap<String, ?> map, String key) {
+		super(map, key);
+	}
 }

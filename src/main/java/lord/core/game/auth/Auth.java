@@ -1,39 +1,31 @@
 package lord.core.game.auth;
 
-import cn.nukkit.Player;
-import cn.nukkit.event.EventHandler;
-import cn.nukkit.event.Listener;
-import cn.nukkit.event.player.PlayerToggleSneakEvent;
-import cn.nukkit.potion.Effect;
-import lord.core.api.CoreApi;
-import lord.core.api.TaskApi;
+import dev.ghostlov3r.beengine.entity.effect.Effect;
+import dev.ghostlov3r.beengine.entity.effect.EffectInstance;
+import dev.ghostlov3r.beengine.entity.effect.Effects;
+import dev.ghostlov3r.beengine.event.player.PlayerToggleSneakEvent;
+import dev.ghostlov3r.beengine.player.GameMode;
+import dev.ghostlov3r.beengine.player.Player;
+import dev.ghostlov3r.beengine.scheduler.Scheduler;
 import lord.core.gamer.Gamer;
-import lord.core.gamer.GamerData;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Auth implements Listener {
+public class Auth {
 	
 	/** Попытки авторизации игрока */
 	private final Map<String, LoginTry> loginTries = new HashMap<>();
 	
 	private AuthForms forms = new AuthForms(this);
-	
-	public Auth () {
-		CoreApi.listeners(this);
-	}
-	
-	/** При приседании */
-	@EventHandler
-	public void onSneak (PlayerToggleSneakEvent event) {
+
+	public void onSneak (PlayerToggleSneakEvent<Gamer> event) {
 		if (event.isSneaking()) {
-			Gamer player = Gamer.from(event.getPlayer());
-			if (!player.isAuthorized()) {
-				if (player.isRegistered()) {
-					this.forms.login(player);
+			if (!event.player().authorized()) {
+				if (event.player().isRegistered()) {
+					this.forms.login(event.player());
 				} else {
-					this.forms.registerStart(player);
+					this.forms.registerStart(event.player());
 				}
 			}
 		}
@@ -42,12 +34,12 @@ public class Auth implements Listener {
 	/** Запрашивает авторизацию у игрока */
 	public void requestAuth (Gamer player) {
 		this.disallowActions(player);
-		TaskApi.delayedRepeat(4, 2.7, new AuthTask(player));
+		Scheduler.delayedRepeat(80, 50, new AuthTask(player));
 	}
 	
 	/** Обработка данных для входа в аккаунт */
 	public void handleLoginData (Gamer player, String password) {
-		LoginTry loginTry = this.loginTries.get(player.getName());
+		LoginTry loginTry = this.loginTries.get(player.name());
 		if (loginTry != null) {
 			if (loginTry.isLimitReached(player)) {
 				player.delayedKick("Вы ввели пароль неверно " + LoginTry.maxCount + " раз." +
@@ -56,17 +48,17 @@ public class Auth implements Listener {
 			}
 		}
 		
-		if (password.trim().equals(player.getData().getPassword())) {
+		if (password.trim().equals(player.password())) {
 			if (loginTry != null) {
 				if (loginTry.remove(player)) {
-					this.loginTries.remove(player.getName());
+					this.loginTries.remove(player.name());
 				}
 			}
 			player.setAuthorized(); // Суть
 		} else {
 			if (loginTry == null) {
 				loginTry = new LoginTry();
-				this.loginTries.put(player.getName(), loginTry);
+				this.loginTries.put(player.name(), loginTry);
 			}
 			loginTry.increment(player);
 			player.delayedKick("Введённый пароль не подходит");
@@ -75,26 +67,26 @@ public class Auth implements Listener {
 	
 	/** Обработка данных регистрации */
 	public void handleRegisterData (Gamer player, RegisterData data) {
-		GamerData lordData = player.getData();
-		lordData.setRegData(data);
+		player.setRegData(data);
 		
 		player.setAuthorized();
 		
-		TaskApi.delay(3, () -> this.forms.firstWelcome(player));
+		Scheduler.delay(3, () -> this.forms.firstWelcome(player));
 	}
 	
 	public void disallowActions (Player player) {
-		player.setGamemode(Player.ADVENTURE);
+		player.setGamemode(GameMode.ADVENTURE);
 		player.setImmobile(true);
-		Effect effect = Effect.getEffect(Effect.BLINDNESS);
-		effect.setAmplifier(1).setDuration(20 * 400);
-		player.addEffect(effect);
+		EffectInstance effect = new EffectInstance(Effects.BLINDNESS);
+		effect.setAmplifier(1);
+		effect.setDuration(20 * 400);
+		player.effects().add(effect);
 	}
 	
 	public void allowActions (Player player) {
-		player.setGamemode(Player.SURVIVAL);
+		player.setGamemode(GameMode.SURVIVAL);
 		player.setImmobile(false);
-		player.removeEffect(Effect.BLINDNESS);
+		player.effects().remove(Effects.BLINDNESS);
 	}
 
 }

@@ -1,9 +1,7 @@
 package lord.core.game.warp;
 
-import lord.core.command.service.CmdArgs;
-import lord.core.command.service.LordCmdException;
-import lord.core.command.service.LordCommand;
 import lord.core.gamer.Gamer;
+import lord.core.util.LordCommand;
 
 public class WarpCommand extends LordCommand {
 	
@@ -16,13 +14,12 @@ public class WarpCommand extends LordCommand {
 	}
 	
 	@Override
-	public boolean handle (Gamer player, CmdArgs args) throws LordCmdException {
-		if (args.count() == 1) {
+	public void execute (Gamer player, String[] args) {
+		if (args.length == 1) {
 			// тп на варп
 		}
-		if (args.count() == 0) {
+		if (args.length == 0) {
 			// todo
 		}
-		return true;
 	}
 }

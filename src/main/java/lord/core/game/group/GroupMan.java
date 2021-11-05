@@ -1,35 +1,36 @@
 package lord.core.game.group;
 
+import dev.ghostlov3r.common.DiskMap;
 import lombok.Getter;
-import lombok.var;
 import lord.core.LordCore;
-import lord.core.mgrbase.manager.LordManF;
 
 import java.util.ArrayList;
+
+import static dev.ghostlov3r.beengine.Server.logger;
 
 /**
  * Менеджер групп
  */
-public class GroupMan extends LordManF<Group, LordCore> {
+public class GroupMan extends DiskMap<String, Group> {
 	
 	/** Группа по умолчанию */
 	@Getter
 	private Group defaultGroup;
 	
 	public GroupMan () {
-		this.prettyJson();
+		super(LordCore.instance().dataPath().resolve("groups"), Group.class);
 		this.loadAll();
-		
-		if (getEntries().isEmpty()) {
+
+		if (isEmpty()) {
 			var group = createDefault();
-			this.add(this.defaultGroup = group);
+			this.put(group.key(), this.defaultGroup = group);
 			group.save();
-			getLogger().alert("Created default Group!");
+			logger().alert("Created default Group!");
 		} else {
-			forEach(this::addParentPermissions);
+			values().forEach(this::addParentPermissions);
 		}
 		
-		getLogger().info("Loaded " + getEntries().size() + " groups!");
+		logger().info("Loaded " + size() + " groups!");
 	}
 	
 	/** Добавляет группе наследованные права */
@@ -37,7 +38,7 @@ public class GroupMan extends LordManF<Group, LordCore> {
 		if (!group.hasParent()) {
 			return;
 		}
-		Group parent = this.getEntries().get(group.getParent());
+		Group parent = this.get(group.getParent());
 		if (parent == null) {
 			return;
 		}
@@ -51,7 +52,7 @@ public class GroupMan extends LordManF<Group, LordCore> {
 	}
 	
 	public Group createDefault () {
-		var group = new Group();
+		var group = new Group(this, "basic");
 		
 		group.prefix = "none";
 		group.clearPrefix = "none";
@@ -62,7 +63,6 @@ public class GroupMan extends LordManF<Group, LordCore> {
 		group.permissions.add("example2"); // remove
 		group.info = new GroupInfo(0, new ArrayList<>());
 		
-		group.finup("basic", this);
 		return group;
 	}
 	

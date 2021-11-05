@@ -1,12 +1,12 @@
 package lord.core.game.region;
 
-import lord.core.rework.RegionManager;
-import lord.core.util.json.LordJson;
-import lord.core.util.file.AdvFile;
 
+import dev.ghostlov3r.beengine.utils.config.Config;
+
+import java.nio.file.Path;
 import java.util.ArrayList;
 
-public class Region implements LordJson {
+public class Region extends Config {
 	
 	/* Название региона */
 	public String name;
@@ -39,15 +39,15 @@ public class Region implements LordJson {
 		return this.memberList.contains(playerName);
 	}
 	
-	public AdvFile getRegionFile() {
-		return RegionManager.getRegionFile(this.x, this.z);
+	public Path getRegionFile() {
+		return null; // Regions.getRegionFile(this.x, this.z);
 	}
 	
 	@Override
 	public void save () {
 		if (this.service) return;
 		if (this.dirty) {
-			this.saveInternal(this.getRegionFile());
+			super.save();
 			this.dirty = false;
 		}
 	}

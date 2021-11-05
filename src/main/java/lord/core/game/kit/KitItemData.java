@@ -2,9 +2,8 @@ package lord.core.game.kit;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.var;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +23,8 @@ public class KitItemData {
 	@Setter private int amount;
 	
 	/** Кастомное имя */
-	@Setter @Nullable private String name;
+	@Setter @Nullable
+	private String name;
 	
 	/** Список зачарований */
 	@Nullable private List<KitItemEnchData> enchs;

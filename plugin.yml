@@ -1,6 +1,6 @@
 name: LordCore
 main: lord.core.LordCore
-version: "1.0"
-api: 2.0.0
-load: STARTUP
 author: ghostlov3r
+version: '0.0.1'
+api:
+  - '1.0.0'

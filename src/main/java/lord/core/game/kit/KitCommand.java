@@ -1,9 +1,7 @@
 package lord.core.game.kit;
 
-import lord.core.command.service.CmdArgs;
-import lord.core.command.service.LordCommand;
-import lord.core.command.service.NotIntException;
 import lord.core.gamer.Gamer;
+import lord.core.util.LordCommand;
 
 public class KitCommand extends LordCommand {
 	
@@ -13,9 +11,9 @@ public class KitCommand extends LordCommand {
 		super("kit");
 		this.manager = manager;
 	}
-	
+
 	@Override
-	public boolean handle (Gamer gamer, CmdArgs args) throws NotIntException {
-		return false;
+	public void execute(Gamer gamer, String[] args) {
+
 	}
 }

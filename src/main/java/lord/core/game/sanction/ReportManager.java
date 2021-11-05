@@ -1,32 +1,30 @@
 package lord.core.game.sanction;
 
-import lombok.var;
+import dev.ghostlov3r.beengine.utils.config.Config;
+import dev.ghostlov3r.common.DiskMap;
 import lord.core.LordCore;
-import lord.core.mgrbase.manager.LordManF;
 
-public class ReportManager extends LordManF<Report, LordCore> {
-	
-	public ReportManager (Sanction sanction) {
-		super(sanction.getFolder().getChild("reports"));
-	}
+public class ReportManager extends DiskMap<String, Report> {
 	
 	// todo
 	private String calcNextFileName () {
 		return "";
 	}
+
+	public ReportManager () {
+		super(LordCore.instance().dataPath().resolve("reports"), Report.class);
+
+	}
 	
 	// todo команда репорт и формы
 	
 	private Report createEntry (String target, String sender, String ruleID, String description) {
-		var entry = Report.builder()
+		return new Report(this, calcNextFileName())
 						  .targetName(target)
 						  .senderName(sender)
 						  .ruleID(ruleID)
 						  .description(description)
-						  .sentTime(System.currentTimeMillis())
-						  .build();
-		entry.finup(calcNextFileName(), this);
-		return entry;
+						  .sentTime(System.currentTimeMillis());
 	}
 
 }

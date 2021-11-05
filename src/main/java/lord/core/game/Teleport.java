@@ -1,28 +1,26 @@
 package lord.core.game;
 
-import cn.nukkit.Player;
-import cn.nukkit.level.Location;
-import cn.nukkit.scheduler.Task;
+import dev.ghostlov3r.beengine.entity.util.Location;
+import dev.ghostlov3r.beengine.player.Player;
+import dev.ghostlov3r.beengine.scheduler.Scheduler;
+import dev.ghostlov3r.beengine.scheduler.Task;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
-import lord.core.LordCore;
-import lord.core.api.TaskApi;
-import lord.core.mgrbase.manager.LordMan;
-import lord.core.mgrbase.entry.LordEntry;
 import lord.core.game.warp.Warp;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class Teleport extends LordMan<Teleport.TeleportRequest, LordCore> {
+public class Teleport {
 	
 	/** Имена телепортированных */ private List<String> completed = new ArrayList<>();
+	private Map<Player, TeleportRequest> requests = new HashMap<>();
 	
 	public Teleport () {
-		TaskApi.repeat(1, new TeleportTask(this));
-		this.getLogger().enabled();
+		Scheduler.repeat(1, new TeleportTask(this));
 	}
 	
 	public void request (Player player, Warp warp, int delay) {
@@ -38,39 +36,40 @@ public class Teleport extends LordMan<Teleport.TeleportRequest, LordCore> {
 	}
 	
 	public void request (Player player, Location location, int secondsDelay, String message) {
-		player.setTitleAnimationTimes(2, 20, 10);
+		player.setTitleDuration(2, 20, 10);
 		
-		var request = new TeleportRequest(player, location, secondsDelay, message);
-		request.finup(player.getName(), this);
-		this.add(request);
+		var request = new TeleportRequest(this, player, location, secondsDelay, message);
+		this.requests.put(player, request);
 	}
 	
 	public boolean requested (Player player) {
-		return this.requested(player.getName());
+		return this.requested(player.name());
 	}
 	
 	public boolean requested (String name) {
-		return this.exists(name);
+		return this.requests.containsKey(name);
 	}
 	
 	private void addCompleted (Player player) {
-		this.completed.add(player.getName());
+		this.completed.add(player.name());
 	}
 	
 	public void cancel (Player player) {
-		this.remove(player.getName());
+		this.requests.remove(player.name());
 	}
 	
 	@AllArgsConstructor
-	protected static class TeleportRequest extends LordEntry<Teleport> {
+	protected static class TeleportRequest {
+		Teleport manager;
 		private final Player player;
 		private final Location location;
 		private int secondsDelay;
-		@Nullable private String message;
+		@Nullable
+		private String message;
 		
 		private void onTimer () {
 			if (!player.isOnline()) {
-				getManager().addCompleted(player);
+				manager.addCompleted(player);
 				return;
 			}
 			if (secondsDelay > 0) {
@@ -80,7 +79,7 @@ public class Teleport extends LordMan<Teleport.TeleportRequest, LordCore> {
 			}
 			if (message != null) player.sendTitle(message);
 			player.teleport(location);
-			getManager().addCompleted(player);
+			manager.addCompleted(player);
 		}
 	}
 	
@@ -88,16 +87,16 @@ public class Teleport extends LordMan<Teleport.TeleportRequest, LordCore> {
 	private static class TeleportTask extends Task {
 		private final Teleport tp;
 		@Override
-		public void onRun (int i) {
-			if (tp.getEntries().isEmpty()) {
+		public void run () {
+			if (tp.requests.isEmpty()) {
 				return;
 			}
-			tp.forEach(TeleportRequest::onTimer);
+			tp.requests.values().forEach(TeleportRequest::onTimer);
 			
 			if (tp.completed.isEmpty()) return;
 			
 			for (String name : tp.completed) {
-				tp.remove(name);
+				tp.requests.remove(name);
 			}
 			tp.completed.clear();
 		}

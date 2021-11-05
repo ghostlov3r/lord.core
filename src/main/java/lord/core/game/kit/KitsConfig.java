@@ -1,11 +1,11 @@
 package lord.core.game.kit;
 
+import dev.ghostlov3r.beengine.utils.config.Config;
 import lombok.Getter;
 import lombok.Setter;
-import lord.core.mgrbase.entry.LordConfig;
 
 @Getter @Setter
-public class KitsConfig extends LordConfig<KitMan> {
+public class KitsConfig extends Config {
 	
 	private boolean enableCommand = true;
 	

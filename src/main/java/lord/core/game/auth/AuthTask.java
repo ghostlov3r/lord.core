@@ -1,6 +1,6 @@
 package lord.core.game.auth;
 
-import cn.nukkit.scheduler.Task;
+import dev.ghostlov3r.beengine.scheduler.Task;
 import lord.core.gamer.Gamer;
 import lord.core.LordCore;
 
@@ -14,13 +14,13 @@ public class AuthTask extends Task {
 	}
 	
 	@Override
-	public void onRun(int i) {
-		if (!this.player.isOnline() || this.player.isAuthorized()) {
+	public void run() {
+		if (!this.player.isOnline() || this.player.authorized()) {
 			this.cancel();
 			return;
 		}
 		if (this.counter > 40) {
-			this.player.delayedKick(LordCore.NEKRAFT_LN + "§c§lВремя авторизации ограничено");
+			this.player.delayedKick(LordCore.instance().config().getNameLN() + "§c§lВремя авторизации ограничено");
 			this.cancel();
 			return;
 		}

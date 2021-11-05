@@ -1,8 +1,9 @@
 package lord.core.game.warp;
 
+import dev.ghostlov3r.beengine.form.CustomForm;
+import dev.ghostlov3r.beengine.form.Form;
+import dev.ghostlov3r.beengine.form.SimpleForm;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
-import lord.core.util.form.FormV1;
 import lord.core.gamer.Gamer;
 
 @RequiredArgsConstructor
@@ -14,11 +15,10 @@ public class WarpForms {
 	 * Главная форма варпов
 	 */
 	public void main (Gamer gamer) {
-		var form = FormV1.simple()
+		SimpleForm form = Form.simple()
 						 .button("Выбрать точку телепортации", player -> chooseWarp((Gamer) player))
 						 .button("Создать точку телепортации", player -> createWarp((Gamer) player))
-						 .button("Мои точки телепортации", player -> createWarp((Gamer) player))
-						 .build();
+						 .button("Мои точки телепортации", player -> createWarp((Gamer) player));
 		gamer.sendForm(form);
 	}
 	
@@ -26,20 +26,20 @@ public class WarpForms {
 	 * Форма выбора варпа
 	 */
 	public void chooseWarp (Gamer gamer) {
-		var form = FormV1.simple();
-		manager.forEach(warp -> {
+		SimpleForm form = Form.simple();
+		manager.values().forEach(warp -> {
 			if (warp.isOpened()) {
-				form.button(warp.getName());
+				form.button(warp.key());
 			}
 		});
 		form.onSubmit((player, resp) -> {
-			manager.teleportOrMess(player, resp.getButton().getButtonText());
+			manager.teleportOrMess(player, resp.getButton().getText());
 		});
-		gamer.sendForm(form.build());
+		gamer.sendForm(form);
 	}
 	
 	public void createWarp (Gamer gamer) {
-		var form = FormV1.custom()
+		CustomForm form = Form.custom()
 						 .input("Укажите имя точки телепортации")
 						 .label("Если данная опция выключена, телепортироваться смогут только игроки из разрешенного списка")
 						 .toggle("Разрешать всем телепортироваться")
@@ -55,24 +55,22 @@ public class WarpForms {
 			manager.onWarpCreate().accept(player, warp);
 			warpCreated((Gamer) player, warp);
 		});
-		gamer.sendForm(form.build());
+		gamer.sendForm(form);
 	}
 	
 	public void warpCreated (Gamer gamer, Warp warp) {
-		var form = FormV1.simple()
-						 .content("Точка телепортации " + warp.getName() +
-						   " успешно создана там, где вы стоите.\n Чтобы телепортироваться сюда, используйте меню /warp или команду /warp " + warp.getName())
-						 .build();
+		SimpleForm form = Form.simple()
+						 .content("Точка телепортации " + warp.key() +
+						   " успешно создана там, где вы стоите.\n Чтобы телепортироваться сюда, используйте меню /warp или команду /warp " + warp.key())
+						 ;
 		gamer.sendForm(form);
 	}
 	
 	public void myWarpsList (Gamer gamer) {
 		var names = manager.playerWarpNames().apply(gamer);
-		var form = FormV1.simple()
+		var form = Form.simple()
 						 .content("Здесь находятся все точки телепортации, которые созданы вами");
-		names.forEach(name -> {
-			form.button(name);
-		});
+		names.forEach(form::button);
 		form.onSubmit((player, resp) -> {
 		
 		});
@@ -88,8 +86,8 @@ public class WarpForms {
 	}
 	
 	public void myWarpPage (Gamer gamer, Warp warp) {
-		var form = FormV1.simple()
-						 .content("Страница точки телепортации " + warp.getName() + "\n Разрешено всем: " + (warp.isOpened() ? "да" : "нет") +
+		SimpleForm form = Form.simple()
+						 .content("Страница точки телепортации " + warp.key() + "\n Разрешено всем: " + (warp.isOpened() ? "да" : "нет") +
 						   "\nВ разрешенном списке: " + warp.getWhiteList().size() + " игроков")
 						 .button("Телепортироваться сюда", warp::teleport)
 						 .button("Открыть разрешенный список", player -> warpWhiteList(gamer, warp))
@@ -98,7 +96,7 @@ public class WarpForms {
 					   		myWarpPage(gamer, warp);
 					   })
 						 .button("Удалить эту точку телепортации", player -> warpDeleteConfirm(gamer, warp))
-						 .build();
+						 ;
 		gamer.sendForm(form);
 	}
 	
