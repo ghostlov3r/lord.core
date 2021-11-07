@@ -4,7 +4,11 @@ import dev.ghostlov3r.beengine.block.Position;
 import dev.ghostlov3r.beengine.entity.util.Location;
 import dev.ghostlov3r.beengine.world.World;
 import dev.ghostlov3r.math.Vector3;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
+@AllArgsConstructor
 public class WeakLocation {
 
 	public float x;

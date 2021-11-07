@@ -9,6 +9,7 @@ import lord.core.minigame.arena.ArenaState;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Этот класс содержит в себе данные о длительности каждого из состояний арены.
@@ -24,8 +25,10 @@ public class ArenaType extends DiskEntry<String> {
 	 * Если арена соло, то общее число; если командная, то чел. в команде */
 	int minPlayers;
 
+	@JsonIgnore
 	int teamCount;
 
+	@JsonIgnore
 	int teamSlots;
 
 	List<DyeColor> colors = new ArrayList<>();
@@ -41,10 +44,8 @@ public class ArenaType extends DiskEntry<String> {
 		durations.add(new StateDuration(ArenaState.GAME, 180));
 		durations.add(new StateDuration(ArenaState.WAIT_END, 20));
 
-		colors.add(DyeColor.BLUE);
-		colors.add(DyeColor.RED);
-		colors.add(DyeColor.GREEN);
-		colors.add(DyeColor.YELLOW);
+		teamSlots = Integer.parseInt(key.split(Pattern.quote("x"))[0]);
+		teamCount = Integer.parseInt(key.split(Pattern.quote("x"))[1]);
 	}
 
 	public int durationOfState (ArenaState state) {
@@ -58,6 +59,10 @@ public class ArenaType extends DiskEntry<String> {
 
 	public int minPlayers() {
 		return minPlayers;
+	}
+
+	public void setMinPlayers(int minPlayers) {
+		this.minPlayers = minPlayers;
 	}
 
 	public int teamCount() {
@@ -81,10 +86,15 @@ public class ArenaType extends DiskEntry<String> {
 	}
 
 	public void matchMaps (Collection<GameMap> maps) {
+		this.maps.clear();
 		maps.forEach(map -> {
-			if (map.teams.size() == teamCount && map.teams.values().iterator().next().spawnLocations.size() == teamCount) {
-				maps.add(map);
+			if (isMapMatches(map)) {
+				this.maps.add(map);
 			}
 		});
+	}
+
+	protected boolean isMapMatches (GameMap map) {
+		return map.teams.size() == teamCount && map.teams.get(0).spawnLocations.size() == teamCount;
 	}
 }

@@ -2,6 +2,7 @@ package lord.core.minigame;
 
 import dev.ghostlov3r.beengine.Server;
 import dev.ghostlov3r.beengine.block.Blocks;
+import dev.ghostlov3r.beengine.block.blocks.BlockAir;
 import dev.ghostlov3r.beengine.event.block.BlockBreakEvent;
 import dev.ghostlov3r.beengine.event.block.BlockPlaceEvent;
 import dev.ghostlov3r.beengine.form.Form;
@@ -15,7 +16,6 @@ import dev.ghostlov3r.beengine.player.PlayerInfo;
 import dev.ghostlov3r.beengine.utils.TextFormat;
 import dev.ghostlov3r.beengine.world.Sound;
 import dev.ghostlov3r.beengine.world.WorldManager;
-import dev.ghostlov3r.common.Utils;
 import dev.ghostlov3r.minecraft.MinecraftSession;
 import dev.ghostlov3r.nbt.NbtMap;
 import lombok.Getter;
@@ -28,25 +28,16 @@ import javax.annotation.Nullable;
 
 /**
  * Этот тип игрока предназначен для использования в минииграх.
- *
- * @param <TTeam> Тип игровой команды игрока
- * @param <TTempStats> Тип данных игрока во время игры
  */
 @Accessors(fluent = true)
 @Getter
-public abstract class MGGamer<
-		TArena extends Arena,
-		TTeam extends Team,
-		TTempStats extends GamerStats>
-	extends Gamer {
-	
-	/* ======================================================================================= */
-	
+public class MGGamer extends Gamer {
+
 	/** Команда, в которой находится игрок */
-	@Nullable private TTeam team;
+	@Nullable private Team team;
 	
 	/** Временные данные игрока во время игры на арене */
-	@Nullable private TTempStats tempStats;
+	@Nullable private GamerGameContext gameCtx;
 
 	public MiniGame manager;
 
@@ -78,9 +69,8 @@ public abstract class MGGamer<
 		return arenaState() == ArenaState.GAME && !isDroppedOut();
 	}
 	
-	@SuppressWarnings("unchecked")
-	public TArena arena() {
-		return team == null ? null : (TArena) team.arena();
+	public Arena arena() {
+		return team == null ? null : team.arena();
 	}
 	
 	@Nullable
@@ -91,13 +81,36 @@ public abstract class MGGamer<
 	/** @return True, если игрок выбыл из игры.
 	 * False, если игрок играет либо нет данных об игре */
 	public boolean isDroppedOut () {
-		return tempStats.isDroppedOut();
+		return gameCtx.isDroppedOut();
 	}
 	
 	public void dropOut() {
-		tempStats.setDroppedOut(true);
+		gameCtx.setDroppedOut(true);
+
+		setGamemode(GameMode.SPECTATOR);
+		setHealth(maxHealth());
+		extinguish();
+
+		if (world.getBlock(addY(5)) instanceof BlockAir) {
+			motion.y += 4;
+		} else {
+			motion.y += world.getHighestBlockAt(floorX(), floorZ()) - y + 1;
+		}
+
+		if (shouldSpawnDeadGamerOnDropOut()) {
+			gameCtx.dead = new DeadGamer(this);
+		}
+
+		updateInventory();
+
+		sendSubTitle(TextFormat.RED+"Вы выбыли из игры");
+
 		arena().onGamerDropOut(this);
 		onDropOut0();
+	}
+
+	protected boolean shouldSpawnDeadGamerOnDropOut () {
+		return true;
 	}
 
 	protected void onDropOut0 () {
@@ -120,8 +133,23 @@ public abstract class MGGamer<
 				inv.clear();
 				giveTeamChooseItem();
 				giveArenaLeaveItem();
+
+				inv.setItem(3, Items.COMPASS().setCustomName(decorateMenuItemName("Голосовать за карту"))
+						.onInteract((p, b) -> {
+							SimpleForm form = Form.simple();
+							arena().type().maps().forEach(map -> {
+								form.button(map.displayName, __ -> {
+									vote = map;
+									sendMessage(TextFormat.GREEN+"Вы проголосовали за "+map.displayName);
+									score().set(3, "Голос за "+map.displayName);
+								});
+							});
+							sendForm(form);
+						})
+				);
 			}
 			case WAIT_END -> {
+				inv.setItem(3, ItemFactory.air());
 				inv.setItem(9, ItemFactory.air());
 			}
 			case PRE_GAME -> {
@@ -206,8 +234,7 @@ public abstract class MGGamer<
 					.onInteract((p, b) -> {
 						SimpleForm form = Form.simple();
 
-						arena().forEachTeam(rawTeam -> {
-							TTeam team = (TTeam) rawTeam;
+						arena().forEachTeam(team -> {
 							form.button(team.textColor() + team.displayName(), player -> {
 								if (team == this.team) {
 									sendMessage("Вы уже в этой команде!");
@@ -300,8 +327,7 @@ public abstract class MGGamer<
 			score().set(3, "Игроков: "+ arena().aliveGamersCount() + "/"+arena().type().maxPlayers());
 		} else {
 			int i = 3;
-			for (Object rawTeam : arena().teams()) {
-				TTeam arenaTeam = (TTeam) rawTeam;
+			for (Team arenaTeam : arena().teams()) {
 				score().set(i++, arenaTeam.coloredName() + ": "+(arenaTeam.isDroppedOut() ? "Проиграли" : "Играют"));
 			}
 		}
@@ -353,12 +379,12 @@ public abstract class MGGamer<
 	/* ======================================================================================= */
 	
 	/** @return True, если тиму можно сменить */
-	public boolean onPreTeamChange (TTeam newTeam) {
+	public boolean onPreTeamChange (Team newTeam) {
 		// check
 		return true;
 	}
-	public void onTeamChanged         (TTeam newTeam) {}
-		   void onTeamChange_internal (TTeam newTeam) {
+	public void onTeamChanged         (Team newTeam) {}
+		   void onTeamChange_internal (Team newTeam) {
 		if (onPreTeamChange(newTeam)) {
 			// changing
 			onTeamChanged(newTeam);
@@ -368,15 +394,15 @@ public abstract class MGGamer<
 	/* ======================================================================================= */
 	
 	@SuppressWarnings("unchecked")
-	public TTempStats newTempStatsObj () {
-		return Utils.newInstance((Class<TTempStats>) Utils.superGenericClass(this, 5), this);
+	public GamerGameContext newTempStatsObj () {
+		return new GamerGameContext(this);
 	}
 	
-	public TTempStats onTempStatsCreate () {
+	public GamerGameContext onTempStatsCreate () {
 		return newTempStatsObj();
 	}
 
-	public void doJoinIn (TTeam team) {
+	public void doJoinIn (Team team) {
 		this.team = team;
 		team.gamers().add(this);
 		updateInventory();
@@ -386,20 +412,21 @@ public abstract class MGGamer<
 	}
 
 	public void leaveArena () {
-		TArena arena = arena();
+		Arena arena = arena();
 		arena.onPreGamerLeave(this);
 		team.gamers().remove(this);
 		team = null;
 		updateInventory();
 		teleport(WorldManager.get().defaultWorld().getSpawnPosition());
 		broadcastSound(Sound.DOOR, asList());
-		tempStats = null;
+		gameCtx = null;
+		vote = null;
 		arena.onGamerLeaved(this);
 		onLobbyJoin();
 		afterArenaLeave0();
 	}
 
-	protected void onArenaJoined0(TTeam team) {
+	protected void onArenaJoined0(Team team) {
 		// NOOP
 	}
 
@@ -409,6 +436,7 @@ public abstract class MGGamer<
 
 	public final void onPreGame() {
 		teleportToGameWorld();
+		vote = null;
 		updateScoreboard();
 		onStatePreGame0();
 	}
@@ -422,7 +450,7 @@ public abstract class MGGamer<
 	}
 
 	public final void onGameStart() {
-		this.tempStats = onTempStatsCreate();
+		this.gameCtx = onTempStatsCreate();
 		updateInventory();
 		onGameStart0();
 	}
@@ -460,7 +488,7 @@ public abstract class MGGamer<
 		setGamemode(GameMode.ADVENTURE);
 		updateInventory();
 		afterGameEnd0();
-		this.tempStats = null;
+		this.gameCtx = null;
 	}
 	protected void afterGameEnd0() {}
 

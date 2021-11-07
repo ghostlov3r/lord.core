@@ -4,7 +4,6 @@ import dev.ghostlov3r.beengine.scheduler.Task;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
-@SuppressWarnings("rawtypes")
 @Accessors(fluent = true)
 @Getter
 public class Ticker extends Task {

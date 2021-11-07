@@ -1,5 +1,6 @@
 package lord.core.minigame;
 
+import dev.ghostlov3r.beengine.block.BlockIds;
 import dev.ghostlov3r.beengine.utils.config.Config;
 import dev.ghostlov3r.beengine.utils.config.Name;
 import lombok.Getter;
@@ -8,7 +9,7 @@ import lombok.Getter;
  * Базовая конфигурация миниигры
  */
 @Name("mg_config")
-public abstract class MiniGameConfig extends Config {
+public class MiniGameConfig extends Config {
 
 	public String stateStandBy = "Ожидание";
 	public String stateStandByExtra = "";
@@ -33,4 +34,7 @@ public abstract class MiniGameConfig extends Config {
 	public String waitLobbyName;
 
 	public String menuItemDecorSymbol = "◆";
+
+	public boolean randomJoinBlockEnabled = true;
+	public int randomJoinBlockId = BlockIds.END_PORTAL;
 }

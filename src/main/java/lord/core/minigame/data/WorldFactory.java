@@ -30,7 +30,9 @@ public class WorldFactory {
 		Promise<World> promise = new Promise<>();
 
 		provider.onResolve(__ -> {
-			promise.resolve(WorldManager.get().createUsingProvider(provider.result()));
+			World world = WorldManager.get().createUsingProvider(provider.result());
+			world.setAutoSave(false);
+			promise.resolve(world);
 		});
 
 		++counter;

@@ -11,21 +11,17 @@ import dev.ghostlov3r.beengine.event.block.BlockPlaceEvent;
 import dev.ghostlov3r.beengine.event.entity.EntityDamageByEntityEvent;
 import dev.ghostlov3r.beengine.event.entity.EntityDamageEvent;
 import dev.ghostlov3r.beengine.event.inventory.InventoryTransactionEvent;
-import dev.ghostlov3r.beengine.event.player.PlayerCreationEvent;
-import dev.ghostlov3r.beengine.event.player.PlayerInteractBlockEvent;
-import dev.ghostlov3r.beengine.event.player.PlayerJoinEvent;
-import dev.ghostlov3r.beengine.event.player.PlayerQuitEvent;
+import dev.ghostlov3r.beengine.event.player.*;
+import dev.ghostlov3r.beengine.event.world.ChunkUnloadEvent;
 import dev.ghostlov3r.beengine.player.Player;
 import dev.ghostlov3r.beengine.score.Scoreboard;
+import dev.ghostlov3r.beengine.utils.TextFormat;
+import dev.ghostlov3r.beengine.world.World;
 import dev.ghostlov3r.beengine.world.WorldManager;
 import dev.ghostlov3r.math.Vector3;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import lord.core.gamer.Gamer;
 import lord.core.minigame.arena.Arena;
 
 import java.util.Map;
-
-@SuppressWarnings({"rawtypes", "unchecked"})
 
 @Priority(EventPriority.HIGH)
 public class MiniGameListener implements EventListener<MGGamer> {
@@ -127,11 +123,38 @@ public class MiniGameListener implements EventListener<MGGamer> {
 	public void onPlayerInteractBlock(PlayerInteractBlockEvent<MGGamer> event) {
 		Block block = event.blockTouched();
 		if (block instanceof BlockSign) {
-			Integer arenaIdx = stateSigns.get(block);
-			if (arenaIdx != null) {
-				Arena arena = (Arena) manager.arenas().get(arenaIdx.intValue());
-				if (arena != null) {
-					arena.tryJoin(event.player());
+			Arena arena = manager.getArenaBySign(block);
+			if (arena != null) {
+				arena.tryJoin(event.player());
+			}
+		}
+	}
+
+	@Override
+	public void onChunkUnload(ChunkUnloadEvent event) {
+		World world = event.getWorld();
+
+		for (Arena arena : manager.arenas().values()) {
+			if (arena.gameWorld() == world) {
+				event.cancel();
+				break;
+			}
+		}
+	}
+
+	@Override
+	public void onPlayerMove(PlayerMoveEvent<MGGamer> event) {
+		if (manager.config().randomJoinBlockEnabled) {
+			if (event.player().arena() == null && event.player().world() == WorldManager.get().defaultWorld()) {
+				if (event.isNotCancelled()) {
+					if (event.player().world().getBlock(event.endPoint()).id() == manager.config().randomJoinBlockId) {
+						Arena arena = manager.matchArenaForJoin();
+						if (arena == null) {
+							event.player().sendTip(TextFormat.RED + "Все арены заполнены!");
+						} else {
+							arena.tryJoin(event.player());
+						}
+					}
 				}
 			}
 		}

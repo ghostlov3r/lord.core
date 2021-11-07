@@ -4,13 +4,12 @@ import dev.ghostlov3r.beengine.block.utils.DyeColor;
 import dev.ghostlov3r.beengine.utils.TextFormat;
 import lombok.experimental.UtilityClass;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 @UtilityClass
-public class ColorMapping {
+public class Colors {
 
-	public TextFormat formatByDye (DyeColor color) {
+	public TextFormat asFormat (DyeColor color) {
 		return switch (color) {
 			case ORANGE -> TextFormat.GOLD;
 			case YELLOW -> TextFormat.YELLOW;
@@ -26,4 +25,16 @@ public class ColorMapping {
 			default -> TextFormat.WHITE;
 		};
 	}
+
+	public static final List<DyeColor> COLORS = List.of(
+			DyeColor.BLUE,
+			DyeColor.RED,
+			DyeColor.GREEN,
+			DyeColor.YELLOW,
+
+			DyeColor.PURPLE,
+			DyeColor.CYAN,
+			DyeColor.ORANGE,
+			DyeColor.GRAY
+	);
 }

@@ -6,8 +6,8 @@ import lombok.Setter;
 import lord.core.minigame.arena.Team;
 
 @Getter @RequiredArgsConstructor
-public abstract class TeamStats<TTeam extends Team> {
+public class TeamStats {
 	
-	private final TTeam team;
+	private final Team team;
 
 }

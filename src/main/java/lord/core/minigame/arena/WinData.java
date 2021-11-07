@@ -1,12 +1,12 @@
 package lord.core.minigame.arena;
 
-public class WinData<TArena extends Arena, TTeam extends Team> {
+public class WinData {
 
-	private final TArena arena;
+	private final Arena arena;
 
-	private final TTeam winnerTeam;
+	private final Team winnerTeam;
 
-	public WinData(TArena arena, TTeam winnerTeam) {
+	public WinData(Arena arena, Team winnerTeam) {
 		this.arena = arena;
 		this.winnerTeam = winnerTeam;
 	}

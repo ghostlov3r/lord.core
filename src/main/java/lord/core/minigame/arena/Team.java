@@ -6,8 +6,9 @@ import dev.ghostlov3r.beengine.utils.TextFormat;
 import dev.ghostlov3r.common.Utils;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import lord.core.minigame.ColorMapping;
+import lord.core.minigame.Colors;
 import lord.core.minigame.MGGamer;
+import lord.core.minigame.data.GameMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,46 +17,48 @@ import java.util.List;
  * Элемент HashMap в LordArena
  * Представляет собой одну из команд игроков на этой арене
  *
- * @param <TArena> Тип арены
- * @param <TGamer> Тип игроков
  * @author ghostlov3r
  */
 @Accessors(fluent = true)
 @Getter
-public abstract class Team<TArena extends Arena, TGamer extends MGGamer, TTempStats extends TeamStats> {
+public class Team {
 	
 	/** Арена, которой принадлежит эта команда */
-	private TArena arena;
+	private Arena arena;
 	
 	/** Игроки, которые сейчас находятся в этой команде,
 	 * будь то во время игры или в лобби ожидания.
 	 * Если арена сольная, то здесь всегда будет максимум один человек. */
-	private List<TGamer> gamers;
+	private List<MGGamer> gamers;
 
-	private TTempStats tempStats;
+	private TeamStats tempStats;
 
 	/** Отображаемое имя этой команды */
 	private String displayName;
 	
 	/** Цвет этой команды */
 	private DyeColor color;
+
+	private int id;
 	
 	/* ======================================================================================= */
 	
-	public Team (TArena arena, DyeColor color) {
+	public Team (Arena arena, int id) {
 		this.arena = arena;
+		this.id = id;
 		this.gamers = new ArrayList<>(arena.type().teamSlots());
-		this.color = color;
+		this.color = isSolo() ? DyeColor.WHITE : Colors.COLORS.get(id);
+		this.displayName = color.name();
 	}
 	
-	public TGamer soloGamer() {
+	public MGGamer soloGamer() {
 		return gamers.get(0);
 	}
 
-	public Location spawnLocationOf (TGamer gamer) {
+	public Location spawnLocationOf (MGGamer gamer) {
 		for (int i = 0; i < gamers.size(); i++) {
 			if (gamers.get(i) == gamer) {
-				return arena.map().teams.get(color.name()).locations().get(i).asLocation(arena.gameWorld());
+				return arena.map().teams.get(i).locations().get(i).asLocation(arena.gameWorld());
 			}
 		}
 		throw new RuntimeException();
@@ -78,12 +81,12 @@ public abstract class Team<TArena extends Arena, TGamer extends MGGamer, TTempSt
 	}
 
 	public TextFormat textColor () {
-		return ColorMapping.formatByDye(color);
+		return Colors.asFormat(color);
 	}
 
 	public int aliveGamersCount () {
 		int c = 0;
-		for (TGamer gamer : gamers) {
+		for (MGGamer gamer : gamers) {
 			if (!gamer.isDroppedOut()) {
 				++c;
 			}
@@ -127,12 +130,11 @@ public abstract class Team<TArena extends Arena, TGamer extends MGGamer, TTempSt
 	
 	/* ======================================================================================= */
 	
-	@SuppressWarnings("unchecked")
-	public TTempStats newTempStatsObj () {
-		return Utils.newInstance((Class<TTempStats>) Utils.superGenericClass(this, 3), this);
+	public TeamStats newTempStatsObj () {
+		return new TeamStats(this);
 	}
 	
-	public TTempStats onTempStatsCreate () {
+	public TeamStats onTempStatsCreate () {
 		return newTempStatsObj();
 	}
 

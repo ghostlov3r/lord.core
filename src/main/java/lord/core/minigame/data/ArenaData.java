@@ -6,16 +6,17 @@ import dev.ghostlov3r.math.Vector3;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Accessors(fluent = true)
 @Getter
-public class ArenaInstance extends DiskEntry<Integer> {
+public class ArenaData extends DiskEntry<Integer> {
 
-	String type;
-	List<Vector3> statePos;
+	public String type;
+	List<Vector3> statePos = new ArrayList<>();
 
-	public ArenaInstance(DiskMap<Integer, ?> map, Integer key) {
+	public ArenaData(DiskMap<Integer, ?> map, Integer key) {
 		super(map, key);
 	}
 }

@@ -24,7 +24,7 @@ public enum ArenaState {
 			private ArenaState next      = null;
 
 	private void initData (MiniGameConfig config) {
-		text = (String) Utils.invoke(config, "getState" + Utils.camelName(this));
+		text = (String) Utils.getFieldValue(config, "state" + Utils.camelName(this));
 		next = values()[(ordinal() + 1) % values().length];
 	}
 	

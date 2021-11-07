@@ -2,7 +2,6 @@ package lord.core.minigame.arena;
 
 import dev.ghostlov3r.beengine.Server;
 import dev.ghostlov3r.beengine.block.blocks.BlockSign;
-import dev.ghostlov3r.beengine.block.utils.DyeColor;
 import dev.ghostlov3r.beengine.block.utils.SignText;
 import dev.ghostlov3r.beengine.event.entity.EntityDamageByEntityEvent;
 import dev.ghostlov3r.beengine.event.entity.EntityDamageEvent;
@@ -30,15 +29,11 @@ import java.util.function.Consumer;
  * Элемент менеджера LordArenaMan
  * Представляет собой арену какой-либо миниигры
  *
- * @param <TTeam> Тип команд
  * @author ghostlov3r
  */
-@SuppressWarnings("rawtypes, unchecked")
 @Accessors(fluent = true)
 @Getter
-public abstract class Arena<
-		TTeam     extends Team,
-		TGamer    extends MGGamer>
+public class Arena
 {
 	private int id;
 	private ArenaState state = ArenaState.STAND_BY;
@@ -47,7 +42,7 @@ public abstract class Arena<
 	private GameMap map = null;
 	private World gameWorld = null;
 
-	private List<TTeam> teams = new ArrayList<>();
+	private List<Team> teams = new ArrayList<>();
 
 	private int gamersCount;
 
@@ -65,21 +60,18 @@ public abstract class Arena<
 		this.manager = manager;
 		this.logger = Server.logger().withPrefix("Arena #"+id);
 
-		Class<TTeam> teamClass = (Class<TTeam>) Utils.superGenericClass(this, 1);
-
 		for (int i = 0; i < type.teamCount(); i++) {
-			teams.add(teamClass.getConstructor(Arena.class, DyeColor.class)
-					.newInstance(this, isSolo() ? DyeColor.WHITE : type.colors().get(i)));
+			teams.add(manager.teamType().getConstructor(Arena.class, int.class).newInstance(this, i));
 		}
 	}
 
 	/* ======================================================================================= */
 	
-	public void forEachTeam (Consumer<TTeam> action) {
+	public void forEachTeam (Consumer<Team> action) {
 		teams.forEach(action);
 	}
 
-	public void forEachGamer (Consumer<TGamer> action) {
+	public void forEachGamer (Consumer<MGGamer> action) {
 		forEachTeam(team -> {
 			team.gamers().forEach(action);
 		});
@@ -99,7 +91,7 @@ public abstract class Arena<
 
 	public int aliveGamersCount () {
 		int c = 0;
-		for (TTeam team : teams) {
+		for (Team team : teams) {
 			c += team.aliveGamersCount();
 		}
 		return c;
@@ -107,7 +99,7 @@ public abstract class Arena<
 
 	public int aliveTeamsCount () {
 		int c = 0;
-		for (TTeam team : teams) {
+		for (Team team : teams) {
 			if (!team.isDroppedOut()) {
 				++c;
 			}
@@ -301,50 +293,57 @@ public abstract class Arena<
 		// NOOP
 	}
 
-	public final void onGamerDropOut (TGamer gamer) {
-		if (gamer.team().aliveGamersCount() == 0) {
-			onTeamDropOut((TTeam) gamer.team());
+	public final void onGamerDropOut (MGGamer gamer) {
+		if (gamer.team().isDroppedOut()) {
+			onTeamDropOut(gamer.team());
 		}
 		forEachGamer(MGGamer::updateArenaPlayerCountScoreInfo);
 		onGamerDropOut0(gamer);
 	}
 
-	protected void onGamerDropOut0 (TGamer gamer) {
+	protected void onGamerDropOut0 (MGGamer gamer) {
 		// NOOP
 	}
 
-	final void onTeamDropOut (TTeam team) {
+	final void onTeamDropOut (Team team) {
 		if (aliveTeamsCount() == 1) {
 			onLastAliveTeam(team);
 		}
 	}
 
-	protected void onTeamDropOut0 (TTeam team) {
+	protected void onTeamDropOut0 (Team team) {
 		// NOOP
 	}
 
-	final void onLastAliveTeam (TTeam team) {
+	final void onLastAliveTeam (Team team) {
 		onLastAliveTeam0(team);
 	}
 
-	protected void onLastAliveTeam0 (TTeam team) {
+	protected void onLastAliveTeam0 (Team team) {
 		setState(ArenaState.GAME_END);
 	}
 	
 	/* ======================================================================================= */
 
-	public boolean isJoinable () {
+	public final boolean isJoinable () {
+		return !type.maps().isEmpty() && isJoinable0();
+	}
+
+	protected boolean isJoinable0 () {
 		return state == ArenaState.STAND_BY || state == ArenaState.WAIT;
 	}
 
-	@SuppressWarnings("unchecked")
-	public final void tryJoin (TGamer gamer) {
+	public final void tryJoin (MGGamer gamer) {
+		if (type.maps().isEmpty()) {
+			gamer.sendTitle(TextFormat.RED+"Арена выключена", TextFormat.GOLD+"Войдите на другую арену");
+			return;
+		}
 		if (!isJoinable()) {
 			gamer.sendTitle(TextFormat.RED+"Арена сейчас не доступна", TextFormat.GOLD+"Ожидайте или войдите на другую арену");
 			return;
 		}
 
-		TTeam team = getTeamForJoin(gamer);
+		Team team = getTeamForJoin(gamer);
 		gamer.doJoinIn(team);
 		gamer.teleportToWaitLobby();
 
@@ -355,17 +354,21 @@ public abstract class Arena<
 		gamer.updateScoreboard();
 		onGamerJoined0(gamer, team);
 		broadcast(gamer.name() + " присоединился к "+ team.textColor()+team.displayName());
+
+		if (isFull()) {
+			setState(ArenaState.WAIT_END);
+		}
 	}
 
-	protected void onGamerJoined0(TGamer gamer, TTeam team) {
+	protected void onGamerJoined0(MGGamer gamer, Team team) {
 		// NOOP
 	}
 
-	public TTeam getTeamForJoin (TGamer gamer) {
+	public Team getTeamForJoin (MGGamer gamer) {
 		int min = type().teamSlots();
-		TTeam best = null;
+		Team best = null;
 
-		for (TTeam team : teams) {
+		for (Team team : teams) {
 			if (team.isEmpty()) {
 				return team;
 			}
@@ -380,11 +383,11 @@ public abstract class Arena<
 		return best;
 	}
 	
-	public final void onPreGamerLeave (TGamer gamer) {
+	public final void onPreGamerLeave (MGGamer gamer) {
 		onPreGamerLeave0(gamer);
 	}
 
-	public final void onGamerLeaved (TGamer gamer) {
+	public final void onGamerLeaved (MGGamer gamer) {
 		broadcast(gamer.name() + " покинул игру");
 		--gamersCount;
 		stopTickerIfNotReady();
@@ -393,11 +396,11 @@ public abstract class Arena<
 		onGamerLeaved0(gamer);
 	}
 
-	protected void onPreGamerLeave0 (TGamer gamer) {
+	protected void onPreGamerLeave0 (MGGamer gamer) {
 		// NOOP
 	}
 
-	protected void onGamerLeaved0 (TGamer gamer) {
+	protected void onGamerLeaved0 (MGGamer gamer) {
 		// NOOP
 	}
 
@@ -461,20 +464,22 @@ public abstract class Arena<
 		stateSigns.forEach(sign -> {
 			sign.setText(new SignText(
 					"Арена №"+id,
+					type.maxPlayers() + "x" + type.teamCount(),
 					"₽"+gamersCount +"/"+ type.maxPlayers()+"₽",
-					state.text()
+					type.maps().isEmpty() ? TextFormat.RED+"Выключена" : state.text()
 				));
+			sign.world().setBlock(sign, sign);
 		});
 	}
 
 	/* ======================================================================================= */
 
-	public void broadcast        (String message)                   { for (TTeam team : teams) team.broadcast        (message);        }
-	public void broadcastError   (String message)                   { for (TTeam team : teams) team.broadcastError   (message);        }
-	public void broadcastWarning (String message)                   { for (TTeam team : teams) team.broadcastWarning (message);        }
-	public void broadcastSuccess (String message)                   { for (TTeam team : teams) team.broadcastSuccess (message);        }
-	public void broadcastColor   (TextFormat color, String message) { for (TTeam team : teams) team.broadcastColor   (color, message); }
-	public void broadcastColor   (char color,       String message) { for (TTeam team : teams) team.broadcastColor   (color, message); }
+	public void broadcast        (String message)                   { for (Team team : teams) team.broadcast        (message);        }
+	public void broadcastError   (String message)                   { for (Team team : teams) team.broadcastError   (message);        }
+	public void broadcastWarning (String message)                   { for (Team team : teams) team.broadcastWarning (message);        }
+	public void broadcastSuccess (String message)                   { for (Team team : teams) team.broadcastSuccess (message);        }
+	public void broadcastColor   (TextFormat color, String message) { for (Team team : teams) team.broadcastColor   (color, message); }
+	public void broadcastColor   (char color,       String message) { for (Team team : teams) team.broadcastColor   (color, message); }
 
 	/* ======================================================================================= */
 }
