@@ -2,12 +2,12 @@ package lord.core.game.warp;
 
 import dev.ghostlov3r.beengine.entity.util.Location;
 import dev.ghostlov3r.beengine.player.Player;
+import dev.ghostlov3r.beengine.utils.DiskMap;
 import dev.ghostlov3r.beengine.utils.TextFormat;
-import dev.ghostlov3r.common.DiskMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import lord.core.LordCore;
+import lord.core.Lord;
 import lord.core.gamer.Gamer;
 
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public class WarpMan extends DiskMap<String, Warp> {
 	private WarpConfig config;
 	
 	public WarpMan () {
-		super(LordCore.instance().dataPath().resolve("warps"), Warp.class);
+		super(Lord.instance.dataPath().resolve("warps"), Warp.class);
 		enableAutoLoad();
 		config = WarpConfig.loadFromDir(path().resolve("cfg"), WarpConfig.class);
 		config.getForceLoadNames().forEach(this::load);
@@ -73,7 +73,7 @@ public class WarpMan extends DiskMap<String, Warp> {
 		Warp warp = new Warp(this, name);
 		warp.location = loc.toLocation();
 		warp.location.setWorld(null);
-		warp.worldName = loc.world().folderName();
+		warp.worldName = loc.world().uniqueName();
 		warp.opened = open;
 		warp.ownerName = owner;
 		warp.whiteList = new ArrayList<>();

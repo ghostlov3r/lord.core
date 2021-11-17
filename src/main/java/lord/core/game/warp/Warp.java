@@ -3,9 +3,9 @@ package lord.core.game.warp;
 import dev.ghostlov3r.beengine.Server;
 import dev.ghostlov3r.beengine.entity.util.Location;
 import dev.ghostlov3r.beengine.player.Player;
-import dev.ghostlov3r.beengine.world.WorldManager;
-import dev.ghostlov3r.common.DiskEntry;
-import dev.ghostlov3r.common.DiskMap;
+import dev.ghostlov3r.beengine.utils.DiskEntry;
+import dev.ghostlov3r.beengine.utils.DiskMap;
+import dev.ghostlov3r.beengine.world.World;
 import lombok.Getter;
 import java.util.List;
 
@@ -29,7 +29,7 @@ public class Warp extends DiskEntry<String> {
 	 * @return Успешно ли все с миром, но не успешный телепорт.
 	 */
 	public boolean teleport (Player gamer) {
-		WorldManager.get().loadWorld(worldName).onResolve(p -> {
+		World.load(worldName).onResolve(p -> {
 			try {
 				Location loc = location.toLocation();
 				loc.setWorld(loc.world());

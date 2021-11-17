@@ -1,9 +1,8 @@
 package lord.core.game.achieve;
 
-import dev.ghostlov3r.beengine.utils.config.Config;
-import dev.ghostlov3r.common.DiskMap;
+import dev.ghostlov3r.beengine.utils.DiskMap;
 import dev.ghostlov3r.math.FRand;
-import lord.core.LordCore;
+import lord.core.Lord;
 
 /**
  * Менеджер достижений игроков
@@ -12,7 +11,7 @@ import lord.core.LordCore;
 public class AchieveMan extends DiskMap<String, Achieve> {
 
 	public AchieveMan () {
-		super(LordCore.instance().dataPath().resolve("achieves"), Achieve.class);
+		super(Lord.instance.dataPath().resolve("achieves"), Achieve.class);
 		loadAll();
 	}
 	

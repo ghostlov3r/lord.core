@@ -1,9 +1,9 @@
 package lord.core.game.kit;
 
+import dev.ghostlov3r.beengine.utils.DiskMap;
 import dev.ghostlov3r.beengine.utils.config.Config;
-import dev.ghostlov3r.common.DiskMap;
 import lombok.Getter;
-import lord.core.LordCore;
+import lord.core.Lord;
 
 import java.util.HashMap;
 
@@ -14,7 +14,7 @@ public class KitMan extends DiskMap<String, Kit> {
 	private KitsConfig config;
 
 	public KitMan () {
-		super(LordCore.instance().dataPath().resolve("kits"), Kit.class);
+		super(Lord.instance.dataPath().resolve("kits"), Kit.class);
 		config = Config.loadFromDir(path().resolve("cfg"), KitsConfig.class);
 	}
 

@@ -8,7 +8,7 @@ import cn.nukkit.level.generator.object.tree.ObjectJungleTree;
 import cn.nukkit.level.generator.object.tree.ObjectOakTree;
 import cn.nukkit.level.generator.object.tree.ObjectSpruceTree;
 import cn.nukkit.scheduler.Task;
-import lord.core.LordCore;
+import lord.core.Lord;
 
 import static lord.core.game.wdecor.WorldDecor.nukkitRandom;
 import static lord.core.game.wdecor.WorldDecor.random;

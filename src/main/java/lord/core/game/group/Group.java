@@ -1,7 +1,7 @@
 package lord.core.game.group;
 
-import dev.ghostlov3r.common.DiskEntry;
-import dev.ghostlov3r.common.DiskMap;
+import dev.ghostlov3r.beengine.utils.DiskEntry;
+import dev.ghostlov3r.beengine.utils.DiskMap;
 import lombok.Getter;
 import lord.core.gamer.Gamer;
 import javax.annotation.Nullable;

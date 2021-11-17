@@ -1,4 +1,4 @@
-package lord.core.game.auth;
+package lord.core.auth;
 
 import dev.ghostlov3r.beengine.player.Player;
 

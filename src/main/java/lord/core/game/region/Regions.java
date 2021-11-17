@@ -14,8 +14,7 @@ import dev.ghostlov3r.beengine.event.world.ChunkUnloadEvent;
 import dev.ghostlov3r.beengine.world.Chunk;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import lombok.val;
-import lord.core.LordCore;
+import lord.core.Lord;
 import lord.core.game.region.store.IRegionStore;
 import lord.core.game.region.store.RegionStore;
 
@@ -38,7 +37,7 @@ public class Regions {
 	
 	@SneakyThrows
 	public Regions (boolean withLoader) {
-		this.FOLDER = LordCore.instance().dataPath().resolve("regions");
+		this.FOLDER = Lord.instance.dataPath().resolve("regions");
 		Files.createDirectories(FOLDER);
 		
 		this.actions = new RegionActions();
@@ -50,7 +49,7 @@ public class Regions {
 		}
 
 
-		EventManager.get().register(LordCore.instance(), new EventListener() {
+		EventManager.get().register(Lord.instance, new EventListener() {
 			@Override
 			public void onBlockPlace(BlockPlaceEvent event) {
 				if (!actions.onBuild()) { // todo
@@ -153,7 +152,7 @@ public class Regions {
 		region.x = x;
 		region.z = z;
 		this.store.putRegionToMap(region);
-		if (this.logEnabled) LordCore.log.info("Loaded region " + region.x + "/" + region.z);
+		if (this.logEnabled) Lord.log.info("Loaded region " + region.x + "/" + region.z);
 		return region;
 	}
 	
@@ -163,7 +162,7 @@ public class Regions {
 		if (region != null && !region.service) {
 			region.save();
 			this.store.removeRegionFromMap(region.x, region.z);
-			if (this.logEnabled) LordCore.log.info("Unloaded region " + region.x + "/" + region.z);
+			if (this.logEnabled) Lord.log.info("Unloaded region " + region.x + "/" + region.z);
 		}
 	}
 	

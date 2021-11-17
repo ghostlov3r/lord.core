@@ -1,143 +1,238 @@
 package lord.core.gamer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import dev.ghostlov3r.beengine.Server;
+import dev.ghostlov3r.beengine.block.Position;
 import dev.ghostlov3r.beengine.entity.util.Location;
 import dev.ghostlov3r.beengine.form.Form;
 import dev.ghostlov3r.beengine.form.SimpleForm;
 import dev.ghostlov3r.beengine.item.Item;
+import dev.ghostlov3r.beengine.network.handler.InGamePacketHandler;
 import dev.ghostlov3r.beengine.player.GameMode;
 import dev.ghostlov3r.beengine.player.Player;
 import dev.ghostlov3r.beengine.player.PlayerInfo;
+import dev.ghostlov3r.beengine.scheduler.AsyncTask;
 import dev.ghostlov3r.beengine.scheduler.Scheduler;
 import dev.ghostlov3r.beengine.utils.TextFormat;
 import dev.ghostlov3r.beengine.world.World;
-import dev.ghostlov3r.beengine.world.WorldManager;
 import dev.ghostlov3r.math.Vector3;
 import dev.ghostlov3r.minecraft.MinecraftSession;
 import dev.ghostlov3r.minecraft.protocol.v113.packet.WorldSoundEvent;
 import dev.ghostlov3r.nbt.NbtMap;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
-import lord.core.LordCore;
-import lord.core.game.auth.RegisterData;
+import lord.core.Lord;
 import lord.core.game.group.Group;
 import lord.core.game.rank.Rank;
+import lord.core.union.UnionDataProvider;
+
+import java.net.InetAddress;
 import java.util.*;
 
 @Accessors(fluent = true)
 @Getter
-public abstract class Gamer extends Player {
-	
-	/* ======================================================================================= */
-	
-	public static Gamer from (Player player) {
-		return (Gamer) player;
-	}
-	
-	/* ======================================================================================= */
-	
-	private final LordCore core;
-	private final String   prefix;
+public class Gamer extends Player {
 
-	private boolean        authorized;
-	public  long           joinTime;
+	public Runnable onShift = null;
+
+	/* ======================================================================================= */
+	public long joinTime;
+	private String chatFormat;
+
+	public long lastChatTime = 0;
+	public String lastMessage = "";
+	public int badMessages = 0;
 	
-	private String         chatFormat;
-	
-	public long           lastChatTime = 0;
-	public String         lastMessage = "";
-	public int            badMessages = 0;
-	
-	private Group          group;
-	private Rank           rank;
+	private Group group;
+	private Rank rank;
 
 	/* ======================================================================================= */
 
 	public static final long NOT_MUTED = -1;
 	public static final long MUTED_FOREVER = 0;
 
+	@Setter protected int money;
+	protected int rankExp;
+	@Setter protected int playedMinutes; // todo
 
-	/** Баланс           */  @Setter protected int    money;
-	/** Опыт ранка       */          protected int    rankExp;
-	/** Время игры мин   */  @Setter protected int    playedMinutes; // todo
-	/** Время посл. auth */          protected long   lastAuth;
-	/** Посл. IP auth    */          protected String lastAuthIP;
-	/** Пароль           */          protected String password;
+	@Setter protected String email;
+	@Setter protected String vklink;
 
-	/** Почта            */  @Setter protected String   email;
-	/** Ссылка вк        */  @Setter protected String   vklink;
+	public Set<String> friends = new HashSet<>();
 
-	public Set<String> friends;
+	public long lastAuthMillis;
+	public String lastAuthIP;
+	public boolean authChecked;
+	public byte[] password;
+	public boolean handlingPassword;
 
 	/* ======================================================================================= */
 
+	public Gamer (MinecraftSession session, PlayerInfo info, boolean authenticated, NbtMap data) {
+		super(session, info, authenticated, data);
+	}
+
+	private NbtMap realData;
+	private Location realSpawn;
+
 	@Override
-	public void writeSaveData(NbtMap.Builder nbt) {
+	public void init (Location spawn) {
+		if (initialized) {
+			throw new IllegalStateException("Player '" + name() + "' is already initialized");
+		}
+		NbtMap data = Lord.unionHandler.provider().readData(name());
+		if (data == null) {
+			logger().error("Has not union data for "+name());
+			disconnect("Union data is absent");
+			return;
+		}
+		readUnionData(data);
+		if (!authChecked) {
+			realSpawn = spawn.toLocation();
+			Position authPos = Lord.auth.world.getSpawnPosition();
+			spawn.setWorld(authPos.world());
+			spawn.setXYZFrom(authPos);
+		}
+		super.init(spawn);
+	}
+
+	@Override
+	protected void initEntity() {
+		super.initEntity();
+		setRank(rankIdx);
+		setGroup(groupName);
+	}
+
+	@Override
+	public final void readSaveData(NbtMap nbt) {
+		if (authChecked) {
+			readSaveData0(nbt);
+		} else {
+			realData = nbt;
+			readSaveData0(NbtMap.EMPTY);
+		}
+	}
+
+	protected void readSaveData0 (NbtMap nbt) {
+		super.readSaveData(nbt);
+	}
+
+	public void writeOriginalPlayerSaveData (NbtMap.Builder nbt) {
 		super.writeSaveData(nbt);
+	}
+
+	/* ======================================================================================= */
+
+	public void writeUnionData (NbtMap.Builder nbt) {
 		nbt.setString("group", group.key());
 		nbt.setInt("rank", rank.key());
 		nbt.setInt("rankExp", rankExp);
 		nbt.setInt("money", money);
 		nbt.setInt("playedMinutes", playedMinutes);
-		if (lastAuthIP != null) {
-			nbt.setString("lastAuthIP", lastAuthIP);
-			nbt.setLong("lastAuth", lastAuth);
-		}
-		if (password != null) {
-			nbt.setString("password", password);
-		}
 		if (email != null) {
 			nbt.setString("email", email);
 		}
 		if (vklink != null) {
 			nbt.setString("vklink", vklink);
 		}
+		if (password != null) {
+			nbt.setByteArray("password", password);
+		}
+		if (lastAuthIP != null) {
+			nbt.setLong("lastAuthMillis", lastAuthMillis);
+			nbt.setString("lastAuthIP", lastAuthIP);
+		}
+	}
+
+	private int rankIdx;
+	private String groupName;
+
+	public void readUnionData(NbtMap nbt) {
+		rankExp = nbt.getInt("rankExp", 0);
+		money = nbt.getInt("money", 0);
+		playedMinutes = nbt.getInt("playedMinutes", 0);
+
+		email = nbt.getString("email", null);
+		vklink = nbt.getString("vklink", null);
+
+		rankIdx = (nbt.getInt("rank", Lord.ranks.defaultRank().key()));
+		groupName = (nbt.getString("group", Lord.groups.defaultGroup().key()));
+		password = nbt.getByteArray("password", null);
+		lastAuthIP = nbt.getString("lastAuthIP", null);
+		lastAuthMillis = nbt.getLong("lastAuthMillis", 0);
+
+		authChecked = isAuthorizedAutomatically();
+	}
+
+	public void saveUnionData () {
+		UnionDataProvider saver = Lord.unionHandler.provider();
+		if (saver != null) {
+			NbtMap.Builder builder = NbtMap.builder();
+			writeUnionData(builder);
+			saver.writeData(name(), builder.build());
+		}
+	}
+
+	public boolean isRegistered () {
+		return password != null;
+	}
+
+	public boolean isAuthorized () {
+		return authChecked && world != Lord.auth.world;
+	}
+
+	/** Действия после успешного ввода пароля */
+	public void setAuthorized() {
+		if (authChecked) {
+			return;
+		}
+		authChecked = true;
+		lastAuthMillis = System.currentTimeMillis();
+		lastAuthIP = session().address().getAddress().getHostName();
+		saveUnionData();
+
+		if (!realData.isEmpty()) {
+			readSaveData(realData);
+			inventoryManager().syncAll(false);
+		}
+		teleport(realSpawn, this::onSuccessAuth);
+		realData = null;
+		realSpawn = null;
 	}
 
 	@Override
-	public void readSaveData(NbtMap nbt) {
-		super.readSaveData(nbt);
-
-		setRank(nbt.getInt("rank"));
-		setGroup(nbt.getString("group"));
-
-		rankExp = nbt.getInt("rankExp");
-		money = nbt.getInt("money");
-		playedMinutes = nbt.getInt("playedMinutes");
-
-		lastAuthIP = nbt.getString("lastAuthIP", null);
-		lastAuth = nbt.getLong("lastAuth", 0);
-		password = nbt.getString("password", null);
-		email = nbt.getString("email", null);
-		vklink = nbt.getString("vklink", null);
+	public boolean shouldSpawnTo(Player player) {
+		return isAuthorized() && super.shouldSpawnTo(player);
 	}
 
-	/* ======================================================================================= */
+	/** Если при входе 2-часовая сессия не истекла, выполняется сразу
+	 * иначе только после авторизации / регистрации */
+	public void onSuccessAuth () {
 
-	@SuppressWarnings("unchecked")
-	public Gamer (MinecraftSession interfaz, PlayerInfo clientID, boolean ip, NbtMap port) {
-		super(interfaz, clientID, ip, port);
-		this.core = LordCore.instance();
-		this.prefix = core.config().getPrefix();
-		
-		// 2 часа
-		authorized = lastAuthIP != null
-				&& session().address().equals(this.lastAuthIP)
-				&& (System.currentTimeMillis() - this.lastAuth) < 7_200_000L;
+		if (!group().isDefault()) {
+			Lord.broadcast("§l+ " + group().getPrefix() + "§f " + name());
+		}
+
+		joinTitle();
 	}
-	
+
+	@SneakyThrows
+	private boolean isAuthorizedAutomatically () {
+		if (lastAuthIP == null) {
+			return false;
+		}
+		if (lastAuthMillis + Lord.instance.config().keepAuthorizedUnit.toMillis(Lord.instance.config().keepAuthorized) > System.currentTimeMillis()) {
+			return session().address().getAddress().equals(InetAddress.getByName(lastAuthIP));
+		}
+		return false;
+	}
+
 	/* ======================================================================================= */
 
 	/** @return Имя в нижнем регистре */
 	public String lowerName() {
 		return name().toLowerCase();
-	}
-	
-	/** @return True, если зарегистрирован */
-	public boolean isRegistered() {
-		return this.password != null;
 	}
 	
 	/** @return True, если указан имейл */
@@ -149,19 +244,15 @@ public abstract class Gamer extends Player {
 	public boolean hasVk () {
 		return this.vklink != null;
 	}
-
-	public void setRegData (RegisterData data) {
-		this.password = data.password;
-	}
 	
 	/* ======================================================================================= */
 	
-	public void prefixMessage        (String message)                   { sendMessage(prefix + message);                             }
-	public void prefixErrorMessage   (String message)                   { sendMessage(prefix + TextFormat.RED + message);            }
-	public void prefixWarningMessage (String message)                   { sendMessage(prefix + TextFormat.GOLD + message);           }
-	public void prefixSuccessMessage (String message)                   { sendMessage(prefix + TextFormat.GREEN + message);          }
-	public void prefixColorMessage   (TextFormat color, String message) { sendMessage(prefix + color + message);                     }
-	public void prefixColorMessage   (char color,       String message) { sendMessage(prefix + TextFormat.ESCAPE + color + message); }
+	public void prefixMessage        (String message)                   { sendMessage(Lord.instance.config().getPrefix() + message);                             }
+	public void prefixErrorMessage   (String message)                   { sendMessage(Lord.instance.config().getPrefix() + TextFormat.RED + message);            }
+	public void prefixWarningMessage (String message)                   { sendMessage(Lord.instance.config().getPrefix() + TextFormat.GOLD + message);           }
+	public void prefixSuccessMessage (String message)                   { sendMessage(Lord.instance.config().getPrefix() + TextFormat.GREEN + message);          }
+	public void prefixColorMessage   (TextFormat color, String message) { sendMessage(Lord.instance.config().getPrefix() + color + message);                     }
+	public void prefixColorMessage   (char color,       String message) { sendMessage(Lord.instance.config().getPrefix() + TextFormat.ESCAPE + color + message); }
 	
 	/* ======================================================================================= */
 
@@ -182,24 +273,24 @@ public abstract class Gamer extends Player {
 
 	/** Дает группу игроку, обновляя права и неймтэг */
 	public void setGroup (String groupName) {
-		setGroup(core.groupMan().get(groupName));
+		setGroup(Lord.groups.get(groupName));
 	}
 	
 	/** Дает группу игроку, обновляя права и неймтэг */
 	public void setGroup (Group group) {
 		if (group == null)
-			group = core.groupMan().getDefaultGroup();
+			group = Lord.groups.defaultGroup();
 		this.group = group;
 		updateNameTag();
 	}
 	
 	public void setRank (int rankName) {
-		setRank(core.rankMan().get(rankName));
+		setRank(Lord.ranks.get(rankName));
 	}
 	
 	public void setRank (Rank rank) {
 		if (rank == null)
-			rank = core.rankMan().getDefaultRank();
+			rank = Lord.ranks.defaultRank();
 		this.rank = rank;
 	}
 	
@@ -221,34 +312,11 @@ public abstract class Gamer extends Player {
 		}
 		Rank newRank = rank.getNext();
 
+		this.setRank(newRank);
 		addRankExp(newExp - maxExp); // Добавление остатка при достижении нового ранга
-		
-		this.setRank(rank);
 	}
 	
 	/* ======================================================================================= */
-	
-	/** Действия после успешного ввода пароля */
-	public void setAuthorized() {
-		core.auth().allowActions(this);
-		lastAuth = System.currentTimeMillis();
-		lastAuthIP = session().address().getAddress().getHostAddress();
-		
-		authorized = true;
-		
-		onSuccessAuth();
-	}
-	
-	/** Если при входе 2-часовая сессия не истекла, выполняется сразу
-	 * иначе только после авторизации / регистрации */
-	public void onSuccessAuth () {
-		
-		if (!group.isDefault()) {
-			LordCore.broadcast("§l+ " + group().getPrefix() + "§f " + name());
-		}
-		
-		joinTitle();
-	}
 	
 	/** Обновляет неймтег и шаблон для чата, нужно при авторизации или смене статуса */
 	public void updateNameTag () {
@@ -272,10 +340,10 @@ public abstract class Gamer extends Player {
 	}
 	
 	public void delayedTeleport (int seconds, Location loc) {
-		if (core.teleport().requested(this)) {
+		if (Lord.teleport.requested(this)) {
 			return;
 		}
-		core.teleport().request(this, loc, seconds);
+		Lord.teleport.request(this, loc, seconds);
 	}
 	
 	public void joinTitle () {
@@ -286,11 +354,6 @@ public abstract class Gamer extends Player {
 
 	
 	/* ======================================================================================= */
-	
-	/** Кик через 2 секунды */
-	public void delayedKick (String reason) {
-		Scheduler.delay(40, () -> this.disconnect("", reason));
-	}
 	
 	public void playSound (WorldSoundEvent.SoundId sound) {
 		var pk = new WorldSoundEvent();
@@ -308,7 +371,7 @@ public abstract class Gamer extends Player {
 		
 		Vector3 pos = this.toVector();
 		if (group.key().equals("diamond")) {
-			this.sendMessage(core.config().getPrefix() + "Инвентарь сохранен!");
+			this.sendMessage(Lord.instance.config().getPrefix() + "Инвентарь сохранен!");
 		} else {
 			for (Item item : this.inventory().contents()) {
 				this.world().dropItem(pos, item);
@@ -323,12 +386,12 @@ public abstract class Gamer extends Player {
 		int remove = this.money / 20;
 		if (remove > 0) {
 			this.removeMoney(remove);
-			this.sendMessage(core.config().getPrefix() + "Потеряно " + remove + " Koins");
+			this.sendMessage(Lord.instance.config().getPrefix() + "Потеряно " + remove + " Koins");
 		}
 		
 		Scheduler.delay(120, () -> {
 			if (this.isOnline()) {
-				this.teleport(WorldManager.get().defaultWorld().getSpawnPosition());
+				this.teleport(World.defaultWorld().getSpawnPosition());
 				this.setGamemode(GameMode.SURVIVAL);
 				this.setImmobile(false);
 			}
@@ -337,5 +400,28 @@ public abstract class Gamer extends Player {
 
 	public void removeMoney(int money) {
 		this.money -= money;
+	}
+
+	private static final String[] BAD_WORDS = {
+		".ru", ".com", "191"
+	};
+
+	/** TRUE Если сообщение спам */
+	public boolean isSpam (String message) {
+		long current = System.currentTimeMillis();
+		if ((current - lastChatTime) < 2200) {
+			return true;
+		}
+		if (lastMessage.equals(message)) {
+			return true;
+		}
+		for (String badMessage : BAD_WORDS) {
+			if (message.contains(badMessage)) { // todo мощный фильтр в декодинге пакета
+				return true;
+			}
+		}
+		lastChatTime = current;
+		lastMessage = message;
+		return false;
 	}
 }

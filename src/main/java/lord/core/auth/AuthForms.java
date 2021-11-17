@@ -1,7 +1,8 @@
-package lord.core.game.auth;
+package lord.core.auth;
 
 import dev.ghostlov3r.beengine.form.CustomForm;
 import dev.ghostlov3r.beengine.form.Form;
+import dev.ghostlov3r.beengine.utils.TextFormat;
 import lombok.RequiredArgsConstructor;
 import lord.core.gamer.Gamer;
 
@@ -16,7 +17,7 @@ public class AuthForms {
 				  .label(player.name() + ", ваш сеанс истёк.")
 				  .input("Используйте свой пароль, чтобы играть снова")
 				  .label("Если вы забыли пароль, используйте команду /iforgot")
-				  .onSubmit((p, r) -> this.auth.handleLoginData(player, r.getInput(1)))
+				  .onSubmit((p, r) -> this.auth.handleLoginData(player, r.getInput(0)))
 		);
 	}
 	
@@ -33,7 +34,7 @@ public class AuthForms {
 	public void registerStep1 (Gamer player, String error) {
 		CustomForm form = Form.custom();
 		if (error != null) {
-			form.label(error);
+			form.label(TextFormat.RED+error+TextFormat.RESET);
 		}
 		form.label("Придумайте Ваш пароль. Он будет использоваться, чтобы войти на сервер.")
 			.label("Обратите внимание: ")
@@ -44,7 +45,7 @@ public class AuthForms {
 			.input("Теперь во второе поле введите опять этот пароль:", "Еще раз пароль вводить сюда");
 		
 		form.onSubmit((p, r) -> {
-			String password = r.getInput(1);
+			String password = r.getInput(0);
 			if (password.length() < 6) {
 				this.registerStep1(player, "Обратите внимание на Первый пункт.");
 				return;
@@ -53,7 +54,7 @@ public class AuthForms {
 				this.registerStep1(player, "Обратите внимание на Третий пункт.");
 				return;
 			}
-			if (!password.equals(r.getInput(2))) {
+			if (!password.equals(r.getInput(1))) {
 				this.registerStep1(player, "Пароль в первом и втором поле должен быть одинаковым.");
 				return;
 			}
@@ -69,14 +70,14 @@ public class AuthForms {
 	public void registerStep2 (Gamer player, RegisterData data, String error) {
 		CustomForm form = Form.custom();
 		if (error != null) {
-			form.label(error);
+			form.label(TextFormat.RED+error+TextFormat.RESET);
 		}
 		form.label("Может случиться так, что Ваш пароль будет утерян. \n\n")
 			.input("Укажите Ваш адрес электронной почты и вы всегда сможете восстановить пароль.", "Email вводить сюда")
 			.label("P.S.: Этот шаг можно пропустить, оставив поле пустым.");
 		
 		form.onSubmit((p, r) -> {
-			String email = r.getInput(1).trim();
+			String email = r.getInput(0).trim();
 			if ("".equals(email)) {
 				data.email = "skip";
 			} else {
@@ -93,21 +94,21 @@ public class AuthForms {
 	public void registerStep3 (Gamer player, RegisterData data, String error) {
 		CustomForm form = Form.custom();
 		if (error != null) {
-			form.label(error);
+			form.label(TextFormat.RED+error+TextFormat.RESET);
 		}
 		form.label("Пожалуйста, укажите ссылку на Ваш профиль Вконтакте. Она Также сможет использоваться, чтобы вернуть доступ к аккаунту или решить проблему")
 			.input("", "Ссылку вводить сюда")
 			.label("P.S.: Этот шаг можно пропустить, оставив поле пустым.");
 		
 		form.onSubmit((p, r) -> {
-			String vklink = r.getInput(1).trim();
+			String vklink = r.getInput(0).trim();
 			if ("".equals(vklink)) {
 				data.vklink = "skip";
 			} else {
 				//check vk syntax
 				data.vklink = vklink;
 			}
-			this.registerStep3(player, data, null);
+			this.registerStep4(player, data);
 		});
 		
 		player.sendForm(form);
@@ -138,7 +139,7 @@ public class AuthForms {
 		player.sendForm(
 			Form.simple()
 				  .content("Команда NEKRAFT рада, что теперь Вы с нами!\n\n" +
-					"Сохраните этот пароль: " + player.password() +
+					"Сохраните этот пароль: " + player.password +
 					"\n\nЭто NEKRAFT! Строй, ломай, стань лучшим!\n" +
 					"Получайте опыт, чтобы открыть новые возможности.\n" +
 					"Пидарасы на спауне будут давать Вам задания\n\n" +

@@ -1,8 +1,9 @@
 package lord.core.game.rank;
 
-import dev.ghostlov3r.common.DiskMap;
+import dev.ghostlov3r.beengine.utils.DiskMap;
 import lombok.Getter;
-import lord.core.LordCore;
+import lombok.experimental.Accessors;
+import lord.core.Lord;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,6 +11,7 @@ import java.util.Arrays;
 /**
  * Менеджер рангов
  */
+@Accessors(fluent = true)
 @Getter
 public class RankMan extends DiskMap<Integer, Rank> {
 	
@@ -20,7 +22,7 @@ public class RankMan extends DiskMap<Integer, Rank> {
 	private Rank lastRank;
 	
 	public RankMan () {
-		super(LordCore.instance().dataPath().resolve("ranks"), Rank.class);
+		super(Lord.instance.dataPath().resolve("ranks"), Rank.class, Integer.class);
 		usingForms = false;
 		loadAll();
 		
@@ -37,7 +39,7 @@ public class RankMan extends DiskMap<Integer, Rank> {
 	
 	/** Добавляет рангам права предыдущих */
 	private void recalculatePermissions () {
-		var rank = this.getDefaultRank();
+		Rank rank = defaultRank();
 		while (rank != null) {
 			var perms = new ArrayList<String>();
 			if (rank.permissions() != null) {

@@ -1,13 +1,16 @@
 package lord.core;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.ghostlov3r.beengine.utils.config.Config;
 import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
-public class CoreConfig extends Config {
+public class LordConfig extends Config {
 	
 	/** Период сохранения */
 	private int savePeriodSec = 60;
@@ -30,4 +33,8 @@ public class CoreConfig extends Config {
 
 	List<String> vanillaCommands = new ArrayList<>();
 
+	public long keepAuthorized = 1;
+	public TimeUnit keepAuthorizedUnit = TimeUnit.DAYS;
+
+	public String authWorld = "auth";
 }

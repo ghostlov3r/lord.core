@@ -1,8 +1,8 @@
 package lord.core.game.kit;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import dev.ghostlov3r.common.DiskEntry;
-import dev.ghostlov3r.common.DiskMap;
+import dev.ghostlov3r.beengine.utils.DiskEntry;
+import dev.ghostlov3r.beengine.utils.DiskMap;
 import lombok.Getter;
 
 import javax.annotation.Nullable;

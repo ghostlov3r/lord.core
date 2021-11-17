@@ -1,6 +1,5 @@
 name: LordCore
-main: lord.core.LordCore
-author: ghostlov3r
+main: lord.core.Lord
 version: '0.0.1'
 api:
   - '1.0.0'

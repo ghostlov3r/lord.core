@@ -1,8 +1,7 @@
 package lord.core.game.sanction;
 
-import dev.ghostlov3r.beengine.utils.config.Config;
-import dev.ghostlov3r.common.DiskMap;
-import lord.core.LordCore;
+import dev.ghostlov3r.beengine.utils.DiskMap;
+import lord.core.Lord;
 
 public class ReportManager extends DiskMap<String, Report> {
 	
@@ -12,7 +11,7 @@ public class ReportManager extends DiskMap<String, Report> {
 	}
 
 	public ReportManager () {
-		super(LordCore.instance().dataPath().resolve("reports"), Report.class);
+		super(Lord.instance.dataPath().resolve("reports"), Report.class);
 
 	}
 	

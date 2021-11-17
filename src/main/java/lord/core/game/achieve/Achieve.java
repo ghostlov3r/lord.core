@@ -1,7 +1,7 @@
 package lord.core.game.achieve;
 
-import dev.ghostlov3r.common.DiskEntry;
-import dev.ghostlov3r.common.DiskMap;
+import dev.ghostlov3r.beengine.utils.DiskEntry;
+import dev.ghostlov3r.beengine.utils.DiskMap;
 import lombok.Getter;
 
 /**

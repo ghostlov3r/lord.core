@@ -5,7 +5,7 @@ import cn.nukkit.Server;
 import cn.nukkit.block.Block;
 import cn.nukkit.level.Level;
 import cn.nukkit.math.Vector3;
-import lord.core.LordCore;
+import lord.core.Lord;
 import lord.core.game.region.Region;
 import lord.core.util.Util;
 import lord.core.util.file.AdvFile;

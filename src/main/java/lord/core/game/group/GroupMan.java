@@ -1,8 +1,8 @@
 package lord.core.game.group;
 
-import dev.ghostlov3r.common.DiskMap;
+import dev.ghostlov3r.beengine.utils.DiskMap;
 import lombok.Getter;
-import lord.core.LordCore;
+import lord.core.Lord;
 
 import java.util.ArrayList;
 
@@ -14,11 +14,10 @@ import static dev.ghostlov3r.beengine.Server.logger;
 public class GroupMan extends DiskMap<String, Group> {
 	
 	/** Группа по умолчанию */
-	@Getter
 	private Group defaultGroup;
 	
 	public GroupMan () {
-		super(LordCore.instance().dataPath().resolve("groups"), Group.class);
+		super(Lord.instance.dataPath().resolve("groups"), Group.class);
 		this.loadAll();
 
 		if (isEmpty()) {
@@ -27,12 +26,17 @@ public class GroupMan extends DiskMap<String, Group> {
 			group.save();
 			logger().alert("Created default Group!");
 		} else {
+			defaultGroup = values().stream().filter(Group::isDefault).findAny().orElseThrow();
 			values().forEach(this::addParentPermissions);
 		}
 		
 		logger().info("Loaded " + size() + " groups!");
 	}
-	
+
+	public Group defaultGroup() {
+		return defaultGroup;
+	}
+
 	/** Добавляет группе наследованные права */
 	public void addParentPermissions (Group group) {
 		if (!group.hasParent()) {

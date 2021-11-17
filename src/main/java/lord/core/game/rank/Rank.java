@@ -1,8 +1,7 @@
 package lord.core.game.rank;
 
-import dev.ghostlov3r.common.DiskEntry;
-import dev.ghostlov3r.common.DiskMap;
-import lombok.Builder;
+import dev.ghostlov3r.beengine.utils.DiskEntry;
+import dev.ghostlov3r.beengine.utils.DiskMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
