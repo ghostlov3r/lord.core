@@ -3,25 +3,41 @@ package lord.core;
 import dev.ghostlov3r.beengine.Server;
 import dev.ghostlov3r.beengine.command.Command;
 import dev.ghostlov3r.beengine.command.CommandMap;
+import dev.ghostlov3r.beengine.entity.EntityFactory;
 import dev.ghostlov3r.beengine.event.EventListener;
 import dev.ghostlov3r.beengine.event.EventManager;
 import dev.ghostlov3r.beengine.event.block.BlockBreakEvent;
 import dev.ghostlov3r.beengine.event.block.BlockPlaceEvent;
+import dev.ghostlov3r.beengine.event.entity.EntityDamageByEntityEvent;
 import dev.ghostlov3r.beengine.event.entity.EntityDamageEvent;
 import dev.ghostlov3r.beengine.event.inventory.InventoryTransactionEvent;
 import dev.ghostlov3r.beengine.event.player.*;
+import dev.ghostlov3r.beengine.item.Item;
+import dev.ghostlov3r.beengine.item.ItemIds;
 import dev.ghostlov3r.beengine.plugin.AbstractPlugin;
 import dev.ghostlov3r.beengine.scheduler.Scheduler;
+import dev.ghostlov3r.beengine.utils.TextFormat;
 import dev.ghostlov3r.beengine.world.generator.GeneratorManager;
 import dev.ghostlov3r.beengine.world.generator.VoidGenerator;
 import dev.ghostlov3r.log.Logger;
 import lord.core.auth.Auth;
+import lord.core.auth.RegisterData;
 import lord.core.game.Teleport;
 import lord.core.game.group.GroupMan;
 import lord.core.game.rank.RankMan;
 import lord.core.gamer.Gamer;
 import lord.core.union.UnionHandler;
+import lord.core.util.LordNpc;
+import lord.core.util.LordNpcCommand;
+import lord.core.util.MainGiftNpc;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
+
+// TODO
+// Челик с наградами
+// Друзья
 public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Gamer> {
 
 	public static Lord instance;
@@ -35,6 +51,8 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 
 	public static UnionHandler unionHandler;
 
+	public static List<BiConsumer<LordNpc, Gamer>> onNpcHit = new ArrayList<>();
+
 	@Override
 	protected void onLoad() {
 		instance = this;
@@ -42,6 +60,8 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 		config().save();
 		// Чтобы юзать флэт генератор потребуются соответствующие хаки, как и этот
 		GeneratorManager.addGenerator(VoidGenerator.class, "flat", true);
+		registerEntities();
+		Server.commandMap().register("npc", new LordNpcCommand());
 		groups = new GroupMan();
 		ranks = new RankMan();
 		teleport  = new Teleport();
@@ -56,6 +76,11 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 			clearDefaults();
 		}
 		EventManager.get().register(this, this);
+	}
+
+	private void registerEntities () {
+		EntityFactory.register(LordNpc.class, (loc, nbt) -> new LordNpc(loc, null), "LordNpc");
+		EntityFactory.register(MainGiftNpc.class, (loc, nbt) -> new MainGiftNpc(loc, null), "MainGiftNpc");
 	}
 	
 	@Override
@@ -82,6 +107,11 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 	}
 
 	@Override
+	public void onPlayerQuit(PlayerQuitEvent<Gamer> event) {
+		event.setQuitMessage("");
+	}
+
+	@Override
 	public void onPlayerToggleSneak(PlayerToggleSneakEvent<Gamer> event) {
 		if (event.isSneaking()) {
 			if (!event.player().authChecked && !event.player().handlingPassword) {
@@ -99,12 +129,43 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 	}
 
 	@Override
-	public void onPlayerChat(PlayerChatEvent<Gamer> event) {
+	public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent<Gamer> event) {
 		Gamer gamer = event.player();
 		if (!gamer.isAuthorized()) {
 			event.cancel();
-			return;
+
+			if (!event.player().authChecked && !event.player().handlingPassword) {
+				if (event.player().isRegistered()) {
+					auth.handleLoginData(event.player(), event.message());
+				} else {
+					if (gamer.tempRegPassNoForm == null) {
+						if (event.message().length() < 6) {
+							gamer.sendMessage(TextFormat.RED + "Пароль должен быть не менее 6 знаков");
+						}
+						else if (event.message().contains(" ")) {
+							gamer.sendMessage(TextFormat.RED + "Пароль не должен иметь пробел");
+						}
+						else {
+							gamer.tempRegPassNoForm = event.message();
+							gamer.sendMessage(">> §6Хороший пароль. Введите его еще раз");
+						}
+					}
+					else {
+						if (gamer.tempRegPassNoForm.equals(event.message())) {
+							auth.handleRegisterData(event.player(), new RegisterData(event.message(), null, null));
+						}
+						else {
+							gamer.sendMessage(TextFormat.RED+"Этот и первый пароль не совпали.");
+						}
+					}
+				}
+			}
 		}
+	}
+
+	@Override
+	public void onPlayerChat(PlayerChatEvent<Gamer> event) {
+		Gamer gamer = event.player();
 		if (gamer.isSpam(event.message())) {
 			gamer.badMessages++;
 			if (gamer.badMessages > 3) {
@@ -169,6 +230,25 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 				event.cancel();
 				if (event.cause() == EntityDamageEvent.Cause.VOID) {
 					Scheduler.delay(1, () -> gamer.teleport(gamer.world().getSpawnPosition().addY(1)));
+				}
+			}
+		}
+	}
+
+	@Override
+	public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+		if (event.entity() instanceof LordNpc npc) {
+			event.cancel();
+			if (event.damager() instanceof Gamer gamer) {
+				Item item = gamer.inventory().itemInHand(false);
+				if (item.id() == ItemIds.GOLDEN_HOE && item.hasCustomName() && item.customName().equals(LordNpcCommand.NPC_DELETER)) {
+					npc.flagForDespawn();
+					gamer.sendMessage("NPC Удален");
+				} else {
+					onNpcHit.forEach(listener -> listener.accept(npc, gamer));
+					if (npc.onHit != null) {
+						npc.onHit.accept(gamer);
+					}
 				}
 			}
 		}

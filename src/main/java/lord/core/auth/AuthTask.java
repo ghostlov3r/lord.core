@@ -8,9 +8,11 @@ public class AuthTask extends Task {
 	
 	private final Gamer player;
 	private int counter = 0;
+	boolean form;
 	
 	public AuthTask (Gamer player) {
 		this.player = player;
+		form = player.session().protocol().hasFormSupport();
 	}
 	
 	@Override
@@ -29,7 +31,19 @@ public class AuthTask extends Task {
 			return;
 		}
 		if ((counter % 3) == 0) {
-			this.player.sendMessage(">> §bАктивируйте приседание");
+			if (form) {
+				this.player.sendMessage(">> §bАктивируйте приседание");
+			}
+			else {
+				if (player.isRegistered()) {
+					this.player.sendMessage(">> §bОтправьте в чат ваш пароль");
+				}
+				else {
+					if (player.tempRegPassNoForm == null) {
+						this.player.sendMessage(">> §bПридумайте пароль и напишите в чат");
+					}
+				}
+			}
 		}
 	}
 }

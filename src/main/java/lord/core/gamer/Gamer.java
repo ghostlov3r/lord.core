@@ -3,6 +3,7 @@ package lord.core.gamer;
 import dev.ghostlov3r.beengine.Server;
 import dev.ghostlov3r.beengine.block.Position;
 import dev.ghostlov3r.beengine.entity.util.Location;
+import dev.ghostlov3r.beengine.entity.util.Skin;
 import dev.ghostlov3r.beengine.form.Form;
 import dev.ghostlov3r.beengine.form.SimpleForm;
 import dev.ghostlov3r.beengine.item.Item;
@@ -13,9 +14,11 @@ import dev.ghostlov3r.beengine.player.PlayerInfo;
 import dev.ghostlov3r.beengine.scheduler.AsyncTask;
 import dev.ghostlov3r.beengine.scheduler.Scheduler;
 import dev.ghostlov3r.beengine.utils.TextFormat;
+import dev.ghostlov3r.beengine.world.Sound;
 import dev.ghostlov3r.beengine.world.World;
 import dev.ghostlov3r.math.Vector3;
 import dev.ghostlov3r.minecraft.MinecraftSession;
+import dev.ghostlov3r.minecraft.data.skin.SkinData;
 import dev.ghostlov3r.minecraft.protocol.v113.packet.WorldSoundEvent;
 import dev.ghostlov3r.nbt.NbtMap;
 import lombok.Getter;
@@ -26,9 +29,11 @@ import lord.core.Lord;
 import lord.core.game.group.Group;
 import lord.core.game.rank.Rank;
 import lord.core.union.UnionDataProvider;
+import lord.core.util.LordNpc;
 
 import java.net.InetAddress;
 import java.util.*;
+import java.util.function.BiFunction;
 
 @Accessors(fluent = true)
 @Getter
@@ -66,6 +71,13 @@ public class Gamer extends Player {
 	public boolean authChecked;
 	public byte[] password;
 	public boolean handlingPassword;
+
+	/*public static class Friend {
+		String name;
+		long lastPlayed;
+	}*/
+
+	public String tempRegPassNoForm;
 
 	/* ======================================================================================= */
 
@@ -348,6 +360,7 @@ public class Gamer extends Player {
 	
 	public void joinTitle () {
 		this.sendTitle("NEKRAFT", "Survival Elite Server", 20, 40, 15);
+		this.broadcastSound(Sound.NOTE(Sound.NoteInstrument.PIANO, 70), asList());
 	}
 	
 	/* ======================================================================================= */
@@ -402,6 +415,18 @@ public class Gamer extends Player {
 		this.money -= money;
 	}
 
+	public LordNpc createNpc() {
+		return createNpc(LordNpc::new);
+	}
+
+	public <T extends LordNpc> T createNpc (BiFunction<Location, SkinData, T> factory) {
+		T npc = factory.apply(this, this.skin());
+		NbtMap.Builder data = NbtMap.builder();
+		writeOriginalPlayerSaveData(data);
+		npc.readSaveData(data.build());
+		return npc;
+	}
+
 	private static final String[] BAD_WORDS = {
 		".ru", ".com", "191"
 	};
@@ -423,5 +448,9 @@ public class Gamer extends Player {
 		lastChatTime = current;
 		lastMessage = message;
 		return false;
+	}
+
+	public void showGiftMenu () {
+		sendForm(Form.simple());
 	}
 }

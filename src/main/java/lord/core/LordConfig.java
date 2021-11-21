@@ -12,17 +12,8 @@ import java.util.concurrent.TimeUnit;
 @Getter
 public class LordConfig extends Config {
 	
-	/** Период сохранения */
-	private int savePeriodSec = 60;
-	
 	/** Время до выключения */
 	private int shutdownDelayMin = 60;
-	
-	/** Период обновления скорборда */
-	private int scoreUpdatePeriod = 6;
-	
-	/** Использовать ли лог пакетов в консоль */
-	private boolean packetLoggerEnabled = false;
 	
 	private boolean clearNukkitCommands = true;
 	

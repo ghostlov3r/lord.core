@@ -41,6 +41,10 @@ public class Auth {
 
 	/** Обработка данных для входа в аккаунт */
 	public void handleLoginData (Gamer player, String password) {
+		if (player.isSneaking()) {
+			player.setSneaking(false);
+		}
+
 		final LoginTry loginTry = this.loginTries.get(player.name());
 		if (loginTry != null) {
 			if (loginTry.isLimitReached(player)) {
@@ -113,6 +117,8 @@ public class Auth {
 			@Override
 			protected void onCompletion() {
 				player.password = result;
+				player.email(data.email);
+				player.vklink(data.vklink);
 				player.handlingPassword = false;
 				player.setAuthorized();
 				Scheduler.delay(10, () -> forms.firstWelcome(player));

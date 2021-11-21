@@ -79,7 +79,7 @@ public class AuthForms {
 		form.onSubmit((p, r) -> {
 			String email = r.getInput(0).trim();
 			if ("".equals(email)) {
-				data.email = "skip";
+
 			} else {
 				//check email syntax
 				data.email = email;
@@ -103,7 +103,7 @@ public class AuthForms {
 		form.onSubmit((p, r) -> {
 			String vklink = r.getInput(0).trim();
 			if ("".equals(vklink)) {
-				data.vklink = "skip";
+
 			} else {
 				//check vk syntax
 				data.vklink = vklink;
@@ -125,8 +125,8 @@ public class AuthForms {
 			Form.simple()
 				  .content("Проверьте введенную информацию.\n\n" +
 					"- Пароль: " + data.password + "\n" +
-					"- Email: " + data.email + "\n" +
-					"- VK-ссылка: " + data.vklink + "\n\n" +
+					"- Email: " + (data.email != null ? data.email : "Не указано") + "\n" +
+					"- VK-ссылка: " + (data.vklink != null ? data.vklink : "Не указано") + "\n\n" +
 					"Если все верно, нажмите Подтвердить.")
 				  .button("ПОДТВЕРДИТЬ", (p) -> {
 					this.auth.handleRegisterData(player, data);
@@ -136,15 +136,21 @@ public class AuthForms {
 	}
 	
 	public void firstWelcome (Gamer player) {
-		player.sendForm(
-			Form.simple()
-				  .content("Команда NEKRAFT рада, что теперь Вы с нами!\n\n" +
-					"Сохраните этот пароль: " + player.password +
-					"\n\nЭто NEKRAFT! Строй, ломай, стань лучшим!\n" +
-					"Получайте опыт, чтобы открыть новые возможности.\n" +
-					"Пидарасы на спауне будут давать Вам задания\n\n" +
-					"Пиздуйте копать шахты и покупайте донат скидки 99%. Этот текст подлежит переработке")
-		);
+		if (player.session().protocol().hasFormSupport()) {
+			player.sendForm(
+					Form.simple()
+							.content("Команда NEKRAFT рада, что теперь Вы с нами!\n\n" +
+									"Сохраните свой пароль! " +
+									"\n\nЭто NEKRAFT! Строй, ломай, стань лучшим!\n" +
+									"Получайте опыт, чтобы открыть новые возможности.\n" +
+									"Пидарасы на спауне будут давать Вам задания\n\n" +
+									"Пиздуйте копать шахты и покупайте донат скидки 99%. Этот текст подлежит переработке")
+			);
+		}
+		else {
+			player.sendMessage(TextFormat.GREEN+"Команда NEKRAFT рада, что теперь Вы с нами!");
+			player.sendMessage("----- "+ TextFormat.GOLD+"Не забудьте свой пароль!"+TextFormat.RESET+" -----");
+		}
 	}
 	
 }
