@@ -8,12 +8,9 @@ import dev.ghostlov3r.beengine.event.EventListener;
 import dev.ghostlov3r.beengine.event.EventManager;
 import dev.ghostlov3r.beengine.event.block.BlockBreakEvent;
 import dev.ghostlov3r.beengine.event.block.BlockPlaceEvent;
-import dev.ghostlov3r.beengine.event.entity.EntityDamageByEntityEvent;
 import dev.ghostlov3r.beengine.event.entity.EntityDamageEvent;
 import dev.ghostlov3r.beengine.event.inventory.InventoryTransactionEvent;
 import dev.ghostlov3r.beengine.event.player.*;
-import dev.ghostlov3r.beengine.item.Item;
-import dev.ghostlov3r.beengine.item.ItemIds;
 import dev.ghostlov3r.beengine.plugin.AbstractPlugin;
 import dev.ghostlov3r.beengine.scheduler.Scheduler;
 import dev.ghostlov3r.beengine.utils.TextFormat;
@@ -30,13 +27,9 @@ import lord.core.union.UnionHandler;
 import lord.core.util.LordNpc;
 import lord.core.util.LordNpcCommand;
 import lord.core.util.MainGiftNpc;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.BiConsumer;
+import lord.core.util.UnionNpc;
 
 // TODO
-// Челик с наградами
 // Друзья
 public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Gamer> {
 
@@ -50,8 +43,6 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 	public static Auth auth;
 
 	public static UnionHandler unionHandler;
-
-	public static List<BiConsumer<LordNpc, Gamer>> onNpcHit = new ArrayList<>();
 
 	@Override
 	protected void onLoad() {
@@ -76,11 +67,19 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 			clearDefaults();
 		}
 		EventManager.get().register(this, this);
+
+		Scheduler.delayedRepeat(1200, 1200, () -> {
+			Server.unsafe().playerList().values().stream()
+					.map(player -> (Gamer) player)
+					.filter(Gamer::isAuthorized)
+					.forEach(Gamer::incrementPlayedMinutes);
+		});
 	}
 
 	private void registerEntities () {
 		EntityFactory.register(LordNpc.class, (loc, nbt) -> new LordNpc(loc, null), "LordNpc");
 		EntityFactory.register(MainGiftNpc.class, (loc, nbt) -> new MainGiftNpc(loc, null), "MainGiftNpc");
+		EntityFactory.register(UnionNpc.class, (loc, nbt) -> new UnionNpc(loc, null), "UnionNpc");
 	}
 	
 	@Override
@@ -175,6 +174,8 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 				gamer.sendMessage("Спам запрещен");
 			}
 			event.cancel();
+		} else {
+			event.setFormat(gamer.chatFormat());
 		}
 	}
 
@@ -194,7 +195,7 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 
 	@Override
 	public void onInventoryTransaction(InventoryTransactionEvent event) {
-		Gamer gamer = (Gamer) event.getTransaction().source();
+		Gamer gamer = (Gamer) event.transaction().source();
 		if (!gamer.isAuthorized()) {
 			event.cancel();
 		}
@@ -230,25 +231,6 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 				event.cancel();
 				if (event.cause() == EntityDamageEvent.Cause.VOID) {
 					Scheduler.delay(1, () -> gamer.teleport(gamer.world().getSpawnPosition().addY(1)));
-				}
-			}
-		}
-	}
-
-	@Override
-	public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-		if (event.entity() instanceof LordNpc npc) {
-			event.cancel();
-			if (event.damager() instanceof Gamer gamer) {
-				Item item = gamer.inventory().itemInHand(false);
-				if (item.id() == ItemIds.GOLDEN_HOE && item.hasCustomName() && item.customName().equals(LordNpcCommand.NPC_DELETER)) {
-					npc.flagForDespawn();
-					gamer.sendMessage("NPC Удален");
-				} else {
-					onNpcHit.forEach(listener -> listener.accept(npc, gamer));
-					if (npc.onHit != null) {
-						npc.onHit.accept(gamer);
-					}
 				}
 			}
 		}

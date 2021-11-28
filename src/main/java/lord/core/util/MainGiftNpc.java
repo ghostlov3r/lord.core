@@ -2,8 +2,6 @@ package lord.core.util;
 
 import dev.ghostlov3r.beengine.entity.obj.ItemEntity;
 import dev.ghostlov3r.beengine.entity.util.Location;
-import dev.ghostlov3r.beengine.event.entity.EntityDamageByEntityEvent;
-import dev.ghostlov3r.beengine.event.entity.EntityDamageEvent;
 import dev.ghostlov3r.beengine.item.Item;
 import dev.ghostlov3r.beengine.item.Items;
 import dev.ghostlov3r.beengine.scheduler.Scheduler;
@@ -31,15 +29,15 @@ public class MainGiftNpc extends LordNpc {
 		super.initEntity();
 
 		setShouldLookAtPlayer(true);
-		setNameTag(TextFormat.GREEN+"Награды");
-		setNameTagVisible();
-		setNameTagAlwaysVisible();
+		setNameTag(TextFormat.GREEN+"Получай награду!");
 	}
 
 	@Override
 	public void readSaveData(NbtMap nbt) {
 		super.readSaveData(nbt);
 		setShouldLookAtPlayer(true);
+		setNameTagVisible();
+		setNameTagAlwaysVisible();
 	}
 
 	@Override
@@ -67,29 +65,26 @@ public class MainGiftNpc extends LordNpc {
 			Item item = ITEMS[i].clone();
 
 			final int _i = i;
-			Scheduler.delay(i * 11, () -> {
-				ItemEntity entity = world.dropItem(this.addY(1), item, new Vector3(FRand.nextSignedFloat(random) * 0.35f, 0.85f, FRand.nextSignedFloat(random) * 0.35f));
+			Scheduler.delay(i * 10, () -> {
+				ItemEntity entity = world.dropItem(this.addY(1), item, new Vector3(FRand.nextSignedFloat(random) * 0.3f, 0.8f, FRand.nextSignedFloat(random) * 0.3f));
 				entity.setCanBeMerged(false);
-				entity.setDespawnDelay(THROW_COUNTER - (_i * 11));
+				entity.setDespawnDelay(THROW_COUNTER - (_i * 10));
 				entity.setPickupDelay(ItemEntity.NEVER_DESPAWN);
 				broadcastSound(Sound.POP);
 			});
 		}
 
-		Scheduler.delay((ITEMS.length * 11) + 5, () -> {
-			broadcastSound(Sound.XP_LEVEL_UP(1));
+		Scheduler.delay((ITEMS.length * 10) + 5, () -> {
 			broadcastSound(Sound.XP_COLLECT);
-			float y = this.y + 0.4f;
+			float y = this.y + 0.3f;
 			for (int i = 0; i < 3; i++) {
-				world.addParticle(FRand.nextSignedFloat(random) + this.x, y, FRand.nextSignedFloat(random) + this.z, Particle.LAVA);
+				world.addParticle(FRand.nextSignedFloat(random) * 1.5f + this.x, y, FRand.nextSignedFloat(random) * 1.5f + this.z, Particle.LAVA_DRIP);
 			}
 		});
 	}
 
 	@Override
-	public void attack (EntityDamageEvent source) {
-		if (source instanceof EntityDamageByEntityEvent ev && ev.damager() instanceof Gamer gamer) {
-			gamer.showGiftMenu();
-		}
+	public void onClick (Gamer gamer) {
+		gamer.showGiftMenu();
 	}
 }

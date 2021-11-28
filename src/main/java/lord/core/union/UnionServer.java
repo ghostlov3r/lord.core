@@ -13,7 +13,7 @@ import java.net.InetSocketAddress;
 
 public class UnionServer {
 
-	public int id;
+	public String id;
 	public String name;
 	public InetSocketAddress address;
 	public int onlineCount;
@@ -23,7 +23,7 @@ public class UnionServer {
 	public Logger logger;
 
 	@SneakyThrows
-	public UnionServer (int id, String name, String ip, int port) {
+	public UnionServer (String id, String name, String ip, int port) {
 		this.id = id;
 		this.name = name;
 		this.address = new InetSocketAddress(InetAddress.getByName(ip), port);

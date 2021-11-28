@@ -2,6 +2,7 @@ package lord.core.auth;
 
 import dev.ghostlov3r.beengine.form.CustomForm;
 import dev.ghostlov3r.beengine.form.Form;
+import dev.ghostlov3r.beengine.scheduler.Scheduler;
 import dev.ghostlov3r.beengine.utils.TextFormat;
 import lombok.RequiredArgsConstructor;
 import lord.core.gamer.Gamer;
@@ -14,9 +15,9 @@ public class AuthForms {
 	public void login (Gamer player) {
 		player.sendForm(
 			Form.custom()
-				  .label(player.name() + ", ваш сеанс истёк.")
-				  .input("Используйте свой пароль, чтобы играть снова")
-				  .label("Если вы забыли пароль, используйте команду /iforgot")
+				  .label(player.name() + ", твой сеанс истёк.")
+				  .input("Используй свой пароль, чтобы играть снова")
+				  .label("Если ты забыл(а) пароль, используй команду /iforgot")
 				  .onSubmit((p, r) -> this.auth.handleLoginData(player, r.getInput(0)))
 		);
 	}
@@ -25,7 +26,7 @@ public class AuthForms {
 		player.sendForm(
 			Form.simple()
 				  .content("Доброго времени суток, " + player.name() + "! \n\n"
-				+ "Этот сервер использует регистрацию, чтобы под этим ником могли играть только Вы, поэтому давайте пройдет пару простых шагов")
+				+ "Этот сервер использует регистрацию, чтобы под этим ником мог(ла) играть только ты, поэтому давай пройдем пару простых шагов")
 				  .button("ДАЛЕЕ", (p) -> this.registerStep1(player, null))
 		);
 	}
@@ -36,22 +37,22 @@ public class AuthForms {
 		if (error != null) {
 			form.label(TextFormat.RED+error+TextFormat.RESET);
 		}
-		form.label("Придумайте Ваш пароль. Он будет использоваться, чтобы войти на сервер.")
-			.label("Обратите внимание: ")
+		form.label("Придумай свой пароль. Он будет использоваться, чтобы войти на сервер.")
+			.label("Обрати внимание: ")
 			.label("1. пароль должен содержать минимум 6 символов.")
 			.label("2. пароль должен иметь и цифры, и буквы")
 			.label("3. пароль НЕ должен иметь пробелы")
 			.input("", "Пароль вводить сюда")
-			.input("Теперь во второе поле введите опять этот пароль:", "Еще раз пароль вводить сюда");
+			.input("Теперь во второе поле введи опять этот пароль:", "Еще раз пароль вводить сюда");
 		
 		form.onSubmit((p, r) -> {
 			String password = r.getInput(0);
 			if (password.length() < 6) {
-				this.registerStep1(player, "Обратите внимание на Первый пункт.");
+				this.registerStep1(player, "Обрати внимание на Первый пункт.");
 				return;
 			}
 			if (password.contains(" ")) {
-				this.registerStep1(player, "Обратите внимание на Третий пункт.");
+				this.registerStep1(player, "Обрати внимание на Третий пункт.");
 				return;
 			}
 			if (!password.equals(r.getInput(1))) {
@@ -72,8 +73,8 @@ public class AuthForms {
 		if (error != null) {
 			form.label(TextFormat.RED+error+TextFormat.RESET);
 		}
-		form.label("Может случиться так, что Ваш пароль будет утерян. \n\n")
-			.input("Укажите Ваш адрес электронной почты и вы всегда сможете восстановить пароль.", "Email вводить сюда")
+		form.label("Может случиться так, что твой пароль будет утерян. \n\n")
+			.input("Укажи свой адрес электронной почты и ты всегда сможешь восстановить пароль.", "Email вводить сюда")
 			.label("P.S.: Этот шаг можно пропустить, оставив поле пустым.");
 		
 		form.onSubmit((p, r) -> {
@@ -96,7 +97,7 @@ public class AuthForms {
 		if (error != null) {
 			form.label(TextFormat.RED+error+TextFormat.RESET);
 		}
-		form.label("Пожалуйста, укажите ссылку на Ваш профиль Вконтакте. Она Также сможет использоваться, чтобы вернуть доступ к аккаунту или решить проблему")
+		form.label("Пожалуйста, укажи ссылку на свой профиль Вконтакте. Она Также сможет использоваться, чтобы вернуть доступ к аккаунту или решить проблему")
 			.input("", "Ссылку вводить сюда")
 			.label("P.S.: Этот шаг можно пропустить, оставив поле пустым.");
 		
@@ -118,16 +119,16 @@ public class AuthForms {
 	/** Пользователь видит и проверяет введенные данные */
 	public void registerStep4 (Gamer player, RegisterData data) {
 		if (data == null) {
-			player.sendMessage("К сожалению, случилась ошибка. Попробуйте снова или обратитесь в Поддержку.");
+			player.sendMessage("К сожалению, случилась ошибка. Попробуй снова или обратись в Поддержку.");
 			return;
 		}
 		player.sendForm(
 			Form.simple()
-				  .content("Проверьте введенную информацию.\n\n" +
+				  .content("Проверь введенную информацию.\n\n" +
 					"- Пароль: " + data.password + "\n" +
 					"- Email: " + (data.email != null ? data.email : "Не указано") + "\n" +
 					"- VK-ссылка: " + (data.vklink != null ? data.vklink : "Не указано") + "\n\n" +
-					"Если все верно, нажмите Подтвердить.")
+					"Если все верно, нажми Подтвердить.")
 				  .button("ПОДТВЕРДИТЬ", (p) -> {
 					this.auth.handleRegisterData(player, data);
 				})
@@ -139,17 +140,17 @@ public class AuthForms {
 		if (player.session().protocol().hasFormSupport()) {
 			player.sendForm(
 					Form.simple()
-							.content("Команда NEKRAFT рада, что теперь Вы с нами!\n\n" +
-									"Сохраните свой пароль! " +
+							.content("Команда NEKRAFT рада, что теперь ты с нами!\n\n" +
+									"Сохрани свой пароль! " +
 									"\n\nЭто NEKRAFT! Строй, ломай, стань лучшим!\n" +
-									"Получайте опыт, чтобы открыть новые возможности.\n" +
-									"Пидарасы на спауне будут давать Вам задания\n\n" +
-									"Пиздуйте копать шахты и покупайте донат скидки 99%. Этот текст подлежит переработке")
+									"Получай опыт, чтобы открыть новые возможности.\n" +
+									"Пидарасы на спауне будут давать тебе задания\n\n" +
+									"Пиздуй копать шахты и покупайте донат скидки 99%.")
 			);
 		}
 		else {
-			player.sendMessage(TextFormat.GREEN+"Команда NEKRAFT рада, что теперь Вы с нами!");
-			player.sendMessage("----- "+ TextFormat.GOLD+"Не забудьте свой пароль!"+TextFormat.RESET+" -----");
+			player.sendMessage(TextFormat.GREEN+"Команда NEKRAFT рада, что теперь ты с нами!");
+			player.sendMessage("----- "+ TextFormat.GOLD+"Не забудь свой пароль!"+TextFormat.RESET+" -----");
 		}
 	}
 	

@@ -1,17 +1,13 @@
 package lord.core.gamer;
 
-import dev.ghostlov3r.beengine.Server;
 import dev.ghostlov3r.beengine.block.Position;
 import dev.ghostlov3r.beengine.entity.util.Location;
-import dev.ghostlov3r.beengine.entity.util.Skin;
 import dev.ghostlov3r.beengine.form.Form;
 import dev.ghostlov3r.beengine.form.SimpleForm;
 import dev.ghostlov3r.beengine.item.Item;
-import dev.ghostlov3r.beengine.network.handler.InGamePacketHandler;
 import dev.ghostlov3r.beengine.player.GameMode;
 import dev.ghostlov3r.beengine.player.Player;
 import dev.ghostlov3r.beengine.player.PlayerInfo;
-import dev.ghostlov3r.beengine.scheduler.AsyncTask;
 import dev.ghostlov3r.beengine.scheduler.Scheduler;
 import dev.ghostlov3r.beengine.utils.TextFormat;
 import dev.ghostlov3r.beengine.world.Sound;
@@ -107,6 +103,17 @@ public class Gamer extends Player {
 			spawn.setXYZFrom(authPos);
 		}
 		super.init(spawn);
+	}
+
+	int realDistanceRequest = Integer.MIN_VALUE;
+
+	@Override
+	public void setViewDistance(int distance) {
+		if (!isAuthorized()) {
+			realDistanceRequest = distance;
+			distance = 3;
+		}
+		super.setViewDistance(distance);
 	}
 
 	@Override
@@ -208,7 +215,13 @@ public class Gamer extends Player {
 			readSaveData(realData);
 			inventoryManager().syncAll(false);
 		}
-		teleport(realSpawn, this::onSuccessAuth);
+		teleport(realSpawn, () -> {
+			if (realDistanceRequest != Integer.MIN_VALUE) {
+				setViewDistance(realDistanceRequest);
+				realDistanceRequest = Integer.MIN_VALUE;
+			}
+			onSuccessAuth();
+		});
 		realData = null;
 		realSpawn = null;
 	}
@@ -270,16 +283,18 @@ public class Gamer extends Player {
 
 	public void showFriends () {
 		SimpleForm form = Form.simple();
-		friends.forEach(form::button);
+		form.title("Мои друзья");
+		form.content("§cЭтот раздел в разработке!§r\n\n" +
+				"Совсем скоро можно будет добавить друга и посмотреть, на каком сервере он играет, и даже пригласить к себе!");
+		// friends.forEach(form::button);
 		sendForm(form);
 	}
 
 	public void showDonateInfo () {
 		SimpleForm form = Form.simple();
-		form.button("Лох - 50р");
-		form.button("Гангстер - 200р");
-		form.button("Школьник 80 лвл - 1000р");
-		form.button("Трахнул мать админа - 5000р");
+		form.title("Донат-бонусы");
+		form.content("§cЭтот раздел в разработке!§r\n\n" +
+				"Скоро здесь будет что-то интересное!");
 		sendForm(form);
 	}
 
@@ -333,12 +348,12 @@ public class Gamer extends Player {
 	/** Обновляет неймтег и шаблон для чата, нужно при авторизации или смене статуса */
 	public void updateNameTag () {
 		if (group().isDefault()) {
-			this.setNameTag("§o§8" + name());
-			this.chatFormat = "§7" + name() + " §8-> §f";
+			this.setNameTag("₽§l§7" + name()+"₽");
+			this.chatFormat = "§7 $NAME §8-> §f$MESSAGE₽";
 		} else {
 			String prefix = this.group().getPrefix();
-			this.setNameTag("§l+ " + prefix + "§o§8" + name());
-			this.chatFormat = "§7(" + prefix + "§7) §f" + name() + " §8-> §f";
+			this.setNameTag("₽§l" + prefix + " §f" + name()+"₽");
+			this.chatFormat = "§7(" + prefix + "§7) §f$NAME §8-> §f$MESSAGE₽";
 		}
 	}
 	
@@ -359,7 +374,7 @@ public class Gamer extends Player {
 	}
 	
 	public void joinTitle () {
-		this.sendTitle("NEKRAFT", "Survival Elite Server", 20, 40, 15);
+		this.sendTitle("§bL§eO§dR§aD", "§7Multi Mode Elite Server", 20, 40, 15);
 		this.broadcastSound(Sound.NOTE(Sound.NoteInstrument.PIANO, 70), asList());
 	}
 	
@@ -452,5 +467,9 @@ public class Gamer extends Player {
 
 	public void showGiftMenu () {
 		sendForm(Form.simple());
+	}
+
+	public void incrementPlayedMinutes () {
+		++playedMinutes;
 	}
 }

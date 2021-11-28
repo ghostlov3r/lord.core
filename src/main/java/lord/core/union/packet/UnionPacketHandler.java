@@ -27,4 +27,6 @@ public class UnionPacketHandler {
 	public boolean handle (GamerDataResponse packet, UnionServer server) {return false;}
 
 	public boolean handle (GamerDataSave packet, UnionServer server) {return false;}
+
+	public boolean handle (GamerDataSaved packet, UnionServer server) {return false;}
 }

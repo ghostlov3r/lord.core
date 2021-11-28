@@ -48,7 +48,7 @@ public class Auth {
 		final LoginTry loginTry = this.loginTries.get(player.name());
 		if (loginTry != null) {
 			if (loginTry.isLimitReached(player)) {
-				player.disconnect("Вы ввели пароль неверно " + LoginTry.maxCount + " раз." +
+				player.disconnect("Пароль введен неверно " + LoginTry.maxCount + " раз." +
 					System.lineSeparator() + "Авторизация более не доступна.");
 				return;
 			}

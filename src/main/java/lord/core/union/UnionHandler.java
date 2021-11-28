@@ -5,6 +5,7 @@ import dev.ghostlov3r.beengine.network.RawPacketHandler;
 import dev.ghostlov3r.beengine.scheduler.AsyncTask;
 import dev.ghostlov3r.beengine.scheduler.Scheduler;
 import dev.ghostlov3r.beengine.scheduler.TaskControl;
+import dev.ghostlov3r.beengine.utils.config.Config;
 import io.netty.buffer.ByteBuf;
 import lord.core.Lord;
 import lord.core.union.packet.*;
@@ -15,32 +16,46 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 import java.util.function.IntSupplier;
+import java.util.function.Predicate;
 
 public class UnionHandler implements RawPacketHandler {
 
 	private Map<InetSocketAddress, UnionServer> servers = new HashMap<>();
-	private Map<Integer, UnionServer> serversById = new HashMap<>();
+	private Map<String, UnionServer> serversById = new HashMap<>();
 	private UnionConfig config;
 	private UnionPacket[] packets = new UnionPacket[64];
 	private TaskControl updateTask;
 	private UnionDataProvider provider = new UnionDataProvider();
 	private IntSupplier onlineCalculator = () -> Server.unsafe().playerList().size();
+	private UnionServer thisServer;
+	private Predicate<UnionServer> statusSendFilter = server -> server != thisServer;
 
 	public UnionHandler() {
 		config = UnionConfig.loadFromDir(Lord.instance.dataPath(), UnionConfig.class);
 		if (!Files.exists(config.file())) {
 			config.save();
 		}
-		config.servers.forEach(entry -> {
-			UnionServer server = new UnionServer(entry.id, entry.name, entry.ip, entry.port);
+		config.servers.forEach((id, data) -> {
+			UnionServer server = new UnionServer(id, data.name, data.ip, data.port);
 			addServer(server);
 		});
+		UnionThisServerID thisIdConfig = Config.loadFromDir(Lord.instance.dataPath(), UnionThisServerID.class);
+		if (!Files.exists(thisIdConfig.file())) {
+			thisIdConfig.save();
+		}
+		thisServer = getServer(thisIdConfig.id);
+		if (thisServer == null) {
+			throw new RuntimeException("This server not found ("+thisIdConfig.id+")");
+		}
+		thisServer.isOnline = true;
 
 		registerPacket(new UpdateStatus());
 		registerPacket(new GamerDataRequest());
 		registerPacket(new GamerDataResponse());
 		registerPacket(new GamerDataSave());
+		registerPacket(new GamerDataSaved());
 
 		updateTask = Scheduler.delayedRepeat(20, config.statusSendFrequency * 20, new Runnable() {
 			int sendToOfflineCounter;
@@ -72,6 +87,14 @@ public class UnionHandler implements RawPacketHandler {
 		return provider;
 	}
 
+	public Predicate<UnionServer> statusSendFilter() {
+		return statusSendFilter;
+	}
+
+	public void setStatusSendFilter(Predicate<UnionServer> statusSendFilter) {
+		this.statusSendFilter = statusSendFilter;
+	}
+
 	public void setProvider(UnionDataProvider provider) {
 		this.provider = provider;
 	}
@@ -82,6 +105,10 @@ public class UnionHandler implements RawPacketHandler {
 
 	public void setOnlineCalculator(IntSupplier onlineCalculator) {
 		this.onlineCalculator = onlineCalculator;
+	}
+
+	public UnionServer thisServer() {
+		return thisServer;
 	}
 
 	public void shutdown () {
@@ -99,7 +126,9 @@ public class UnionHandler implements RawPacketHandler {
 		long now = System.currentTimeMillis();
 		int online = onlineCalculator().getAsInt();
 		servers.values().forEach(server -> {
-			server.update(now, online, sendToOffline);
+			if (statusSendFilter.test(server)) {
+				server.update(now, online, sendToOffline);
+			}
 		});
 	}
 
@@ -137,7 +166,7 @@ public class UnionHandler implements RawPacketHandler {
 		return servers.get(address);
 	}
 
-	public UnionServer getServer (int id) {
+	public UnionServer getServer (String id) {
 		return serversById.get(id);
 	}
 

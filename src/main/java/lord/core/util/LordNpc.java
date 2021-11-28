@@ -4,6 +4,11 @@ import dev.ghostlov3r.beengine.entity.ai.helper.EntityBodyHelper;
 import dev.ghostlov3r.beengine.entity.ai.helper.EntityLookHelper;
 import dev.ghostlov3r.beengine.entity.any.EntityHuman;
 import dev.ghostlov3r.beengine.entity.util.Location;
+import dev.ghostlov3r.beengine.event.entity.EntityDamageByEntityEvent;
+import dev.ghostlov3r.beengine.event.entity.EntityDamageEvent;
+import dev.ghostlov3r.beengine.item.Item;
+import dev.ghostlov3r.beengine.player.Player;
+import dev.ghostlov3r.math.Vector3;
 import dev.ghostlov3r.minecraft.data.skin.SkinData;
 import dev.ghostlov3r.minecraft.generic.PacketInputStream;
 import dev.ghostlov3r.minecraft.generic.PacketOutputStream;
@@ -12,13 +17,13 @@ import dev.ghostlov3r.minecraft.protocol.v465.SkinCoder_v465;
 import dev.ghostlov3r.nbt.NbtMap;
 import lord.core.gamer.Gamer;
 
+import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 public class LordNpc extends EntityHuman {
 
 	private static final SkinCoder skinCoder = new SkinCoder_v465();
-
-	public Consumer<Gamer> onHit;
+	public static final int DEFAULT_TAG_UPDATE_PERIOD = 10 * 20;
 
 	public EntityLookHelper lookHelper;
 	public EntityBodyHelper bodyHelper;
@@ -26,6 +31,9 @@ public class LordNpc extends EntityHuman {
 
 	protected boolean shouldLookAtPlayer;
 	protected boolean lookingNow;
+
+	protected int tagUpdateCounter = 0;
+	protected int tagUpdatePeriod;
 
 	public LordNpc(Location location, SkinData skin) {
 		super(location, skin);
@@ -38,6 +46,14 @@ public class LordNpc extends EntityHuman {
 		lookHelper = new EntityLookHelper(this);
 		bodyHelper = new EntityBodyHelper(this);
 		lookAtPlayer = new BehaviorLookAtPlayer(this, 5);
+
+		hungerManager.setEnabled(false);
+
+		setTagUpdatePeriod(DEFAULT_TAG_UPDATE_PERIOD);
+	}
+
+	public void setTagUpdatePeriod(int tagUpdatePeriod) {
+		this.tagUpdatePeriod = tagUpdatePeriod;
 	}
 
 	public boolean shouldLookAtPlayer() {
@@ -67,11 +83,31 @@ public class LordNpc extends EntityHuman {
 				}
 			}
 
+			if (lookingNow) {
+				lookAtPlayer.onTick();
+			}
+
 			lookHelper.onUpdate();
 			bodyHelper.onUpdate();
+
+			yaw = headYaw;
 		}
 
 		return super.onUpdate(currentTick) || lookingNow;
+	}
+
+	@Override
+	protected boolean entityBaseTick(int tickDiff) {
+		tagUpdateCounter -= tickDiff;
+		if (tagUpdateCounter < 0) {
+			tagUpdateCounter = tagUpdatePeriod;
+			updateNameTag();
+		}
+		return super.entityBaseTick(tickDiff);
+	}
+
+	protected void updateNameTag () {
+
 	}
 
 	@Override
@@ -127,5 +163,23 @@ public class LordNpc extends EntityHuman {
 		}
 		setNameTagAlwaysVisible(nbt.getBoolean("CustomNameAlwaysVisible", false));
 		setShouldLookAtPlayer(nbt.getBoolean("shouldLookAtPlayer", false));
+	}
+
+	public void onClick (Gamer gamer) {
+
+	}
+
+	@Override
+	public final void attack(EntityDamageEvent source) {
+		source.cancel();
+		if (source instanceof EntityDamageByEntityEvent ev && ev.damager() instanceof Gamer gamer) {
+			onClick(gamer);
+		}
+	}
+
+	@Override
+	public final boolean onFirstInteract(Player player, Item item, @Nullable Vector3 clickPos) {
+		onClick((Gamer) player);
+		return false;
 	}
 }

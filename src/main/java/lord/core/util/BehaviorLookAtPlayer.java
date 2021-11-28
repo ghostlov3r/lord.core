@@ -1,32 +1,30 @@
 package lord.core.util;
 
-import dev.ghostlov3r.beengine.entity.Entity;
-import dev.ghostlov3r.beengine.entity.EntityLiving;
 import dev.ghostlov3r.beengine.player.Player;
 import dev.ghostlov3r.math.FMath;
 
 public class BehaviorLookAtPlayer {
 
-	protected float $lookDistance;
-	protected Player $nearestEntity;
-	protected int $lookTime = 0;
+	protected float lookDistance;
+	protected Player nearestPlayer;
+	protected int lookTime = 0;
 	protected LordNpc mob;
 
-	public BehaviorLookAtPlayer(LordNpc $mob) {
-		this($mob, 6);
+	public BehaviorLookAtPlayer(LordNpc mob) {
+		this(mob, 6);
 	}
 
-	public BehaviorLookAtPlayer (LordNpc $mob, float $lookDistance){
-		this.mob = $mob;
-		this.$lookDistance = $lookDistance;
+	public BehaviorLookAtPlayer (LordNpc mob, float lookDistance){
+		this.mob = mob;
+		this.lookDistance = lookDistance;
 	}
 
 	public boolean canStart() {
-		if(mob.random.nextFloat() < 0.02f){
-			Player target = mob.world().getNearestEntity(mob, $lookDistance, Player.class);
+		if(mob.random.nextFloat() < 0.05f){
+			Player target = mob.world().getNearestEntity(mob, lookDistance, Player.class);
 
 			if(target != null){
-				$nearestEntity = target;
+				nearestPlayer = target;
 
 				return true;
 			}
@@ -36,19 +34,22 @@ public class BehaviorLookAtPlayer {
 	}
 
 	public void onStart() {
-		$lookTime = 40 + mob.random.nextInt(40);
+		lookTime = 50 + mob.random.nextInt(40);
 	}
 
 	public boolean canContinue() {
-		return !($nearestEntity.isAlive() ? false : ((mob.distanceSquared($nearestEntity) > FMath.square($lookDistance)) ? false : ($lookTime > 0)));
+		return lookTime > 0
+				&& nearestPlayer.isAlive()
+				&& nearestPlayer.isSpawned()
+				&& (mob.distanceSquared(nearestPlayer) <= FMath.square(lookDistance));
 	}
 
 	public void onTick() {
-		mob.lookHelper.setLookPositionWithEntity($nearestEntity, 10, 30);
-		$lookTime--;
+		mob.lookHelper.setLookPositionWithEntity(nearestPlayer, 10, 30);
+		lookTime--;
 	}
 
 	public void onEnd() {
-		$nearestEntity = null;
+		nearestPlayer = null;
 	}
 }
