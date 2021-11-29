@@ -1,6 +1,7 @@
 package lord.core;
 
 import dev.ghostlov3r.beengine.Server;
+import dev.ghostlov3r.beengine.block.Block;
 import dev.ghostlov3r.beengine.command.Command;
 import dev.ghostlov3r.beengine.command.CommandMap;
 import dev.ghostlov3r.beengine.entity.EntityFactory;
@@ -11,12 +12,16 @@ import dev.ghostlov3r.beengine.event.block.BlockPlaceEvent;
 import dev.ghostlov3r.beengine.event.entity.EntityDamageEvent;
 import dev.ghostlov3r.beengine.event.inventory.InventoryTransactionEvent;
 import dev.ghostlov3r.beengine.event.player.*;
+import dev.ghostlov3r.beengine.item.LegacyStringToItemParser;
+import dev.ghostlov3r.beengine.player.Player;
 import dev.ghostlov3r.beengine.plugin.AbstractPlugin;
 import dev.ghostlov3r.beengine.scheduler.Scheduler;
 import dev.ghostlov3r.beengine.utils.TextFormat;
 import dev.ghostlov3r.beengine.world.generator.GeneratorManager;
 import dev.ghostlov3r.beengine.world.generator.VoidGenerator;
 import dev.ghostlov3r.log.Logger;
+import dev.ghostlov3r.math.AxisAlignedBB;
+import dev.ghostlov3r.math.Vector3;
 import lord.core.auth.Auth;
 import lord.core.auth.RegisterData;
 import lord.core.game.Teleport;
@@ -28,6 +33,9 @@ import lord.core.util.LordNpc;
 import lord.core.util.LordNpcCommand;
 import lord.core.util.MainGiftNpc;
 import lord.core.util.UnionNpc;
+
+import java.util.HashMap;
+import java.util.Map;
 
 // TODO
 // Друзья
@@ -61,6 +69,13 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 		Server.network().registerRawPacketHandler(unionHandler);
 	}
 
+	static class EditorCtx {
+		Vector3 pos1;
+		Vector3 pos2;
+	}
+
+	Map<Gamer, EditorCtx> editor = new HashMap<>();
+
 	@Override
 	public void onEnable () {
 		if (config().isClearNukkitCommands()) {
@@ -73,6 +88,53 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 					.map(player -> (Gamer) player)
 					.filter(Gamer::isAuthorized)
 					.forEach(Gamer::incrementPlayedMinutes);
+		});
+
+		registerCommand("/pos1", (sender, args) -> {
+			if (sender instanceof Gamer gamer) {
+				EditorCtx ctx = editor.get(gamer); if (ctx == null) { ctx = new EditorCtx(); editor.put(gamer, ctx); } ctx.pos1 = gamer.toVector();
+				editor.computeIfAbsent(gamer, __ -> new EditorCtx()).pos1 = gamer.toVector();
+				gamer.sendMessage("Точка 1 на "+gamer.toVector());
+			}
+			return true;
+		});
+
+		registerCommand("/pos2", (sender, args) -> {
+			if (sender instanceof Gamer gamer) {
+				EditorCtx ctx = editor.get(gamer);
+				if (ctx == null || ctx.pos1 == null) {
+					gamer.sendMessage("Сначала нужна точка 1");
+					return true;
+				}
+				ctx.pos2 = gamer.toVector();
+				gamer.sendMessage("Точка 2 на "+gamer.toVector());
+			}
+			return true;
+		});
+
+		registerCommand("/set", (sender, args) -> {
+			if (sender instanceof Gamer gamer) {
+				EditorCtx ctx = editor.get(gamer);
+				if (ctx == null || ctx.pos1 == null) {
+					gamer.sendMessage("Сначала нужна точка 1");
+					return true;
+				}
+				if (ctx.pos2 == null) {
+					gamer.sendMessage("Сначала нужна точка 2");
+					return true;
+				}
+				Block block = LegacyStringToItemParser.parse(args[0]).blockEquivalent();
+				gamer.world().fill(new AxisAlignedBB(
+					Math.min(ctx.pos1.x, ctx.pos2.x),
+					Math.min(ctx.pos1.y, ctx.pos2.y),
+					Math.min(ctx.pos1.z, ctx.pos2.z),
+					Math.max(ctx.pos1.x, ctx.pos2.x),
+					Math.max(ctx.pos1.y, ctx.pos2.y),
+					Math.max(ctx.pos1.z, ctx.pos2.z)
+				), block);
+				gamer.sendMessage("Готово");
+			}
+			return true;
 		});
 	}
 
@@ -108,6 +170,7 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 	@Override
 	public void onPlayerQuit(PlayerQuitEvent<Gamer> event) {
 		event.setQuitMessage("");
+		editor.remove(event.player());
 	}
 
 	@Override
