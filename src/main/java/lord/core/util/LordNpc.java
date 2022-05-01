@@ -1,20 +1,20 @@
 package lord.core.util;
 
-import dev.ghostlov3r.beengine.entity.ai.helper.EntityBodyHelper;
-import dev.ghostlov3r.beengine.entity.ai.helper.EntityLookHelper;
-import dev.ghostlov3r.beengine.entity.any.EntityHuman;
-import dev.ghostlov3r.beengine.entity.util.Location;
-import dev.ghostlov3r.beengine.event.entity.EntityDamageByEntityEvent;
-import dev.ghostlov3r.beengine.event.entity.EntityDamageEvent;
-import dev.ghostlov3r.beengine.item.Item;
-import dev.ghostlov3r.beengine.player.Player;
-import dev.ghostlov3r.math.Vector3;
-import dev.ghostlov3r.minecraft.data.skin.SkinData;
-import dev.ghostlov3r.minecraft.generic.PacketInputStream;
-import dev.ghostlov3r.minecraft.generic.PacketOutputStream;
-import dev.ghostlov3r.minecraft.protocol.SkinCoder;
-import dev.ghostlov3r.minecraft.protocol.v465.SkinCoder_v465;
-import dev.ghostlov3r.nbt.NbtMap;
+import beengine.entity.ai.helper.EntityBodyHelper;
+import beengine.entity.ai.helper.EntityLookHelper;
+import beengine.entity.any.EntityHuman;
+import beengine.entity.util.Location;
+import beengine.event.entity.EntityDamageByEntityEvent;
+import beengine.event.entity.EntityDamageEvent;
+import beengine.item.Item;
+import beengine.minecraft.data.skin.SkinData;
+import beengine.minecraft.generic.PacketInputStream;
+import beengine.minecraft.generic.PacketOutputStream;
+import beengine.minecraft.protocol.SkinCoder;
+import beengine.minecraft.protocol.v465.SkinCoder_v465;
+import beengine.nbt.NbtMap;
+import beengine.player.Player;
+import beengine.util.math.Vector3;
 import lord.core.gamer.Gamer;
 
 import javax.annotation.Nullable;

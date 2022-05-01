@@ -1,6 +1,6 @@
 package lord.core.union.packet;
 
-import dev.ghostlov3r.beengine.Server;
+import beengine.Server;
 import lord.core.union.UnionServer;
 
 public class UnionPacketHandler {

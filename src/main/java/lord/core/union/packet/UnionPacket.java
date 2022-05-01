@@ -1,8 +1,8 @@
 package lord.core.union.packet;
 
-import dev.ghostlov3r.binary.OutputBuffer;
-import dev.ghostlov3r.nbt.*;
-import io.netty.buffer.ByteBuf;
+import beengine.nbt.*;
+import beengine.util.binary.NioBuffer;
+import beengine.util.binary.OutputBuffer;
 import lombok.SneakyThrows;
 import lord.core.union.UnionServer;
 
@@ -10,9 +10,9 @@ public abstract class UnionPacket implements Cloneable {
 
 	public abstract int id ();
 
-	public abstract void encode (ByteBuf out);
+	public abstract void encode (NioBuffer out);
 
-	public abstract void decode (ByteBuf in);
+	public abstract void decode (NioBuffer in);
 
 	public abstract boolean handle (UnionPacketHandler handler, UnionServer server);
 
@@ -22,15 +22,13 @@ public abstract class UnionPacket implements Cloneable {
 		return (UnionPacket) super.clone();
 	}
 
-	protected static void writeNbt (ByteBuf out, NbtMap nbt) {
+	protected static void writeNbt (NioBuffer out, NbtMap nbt) {
 		OutputBuffer buffer = OutputBuffer.local();
 		NbtEncoder.encode(NbtWriter.NETWORK, nbt, buffer);
-		out.writeBytes(buffer.buffer(), 0, buffer.offset());
+		out.write(buffer.trimmedBuffer());
 	}
 
-	protected static NbtMap readNbt (ByteBuf in) {
-		byte[] nbt = new byte[in.readableBytes()];
-		in.readBytes(nbt);
-		return NbtDecoder.decode(NbtReader.NETWORK, NbtType.COMPOUND, nbt);
+	protected static NbtMap readNbt (NioBuffer in) {
+		return NbtDecoder.decode(NbtReader.NETWORK, NbtType.COMPOUND, in.read(in.readableCount()));
 	}
 }

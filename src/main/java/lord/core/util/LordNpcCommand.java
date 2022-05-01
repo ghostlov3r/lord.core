@@ -1,10 +1,9 @@
 package lord.core.util;
 
-import dev.ghostlov3r.beengine.form.CustomForm;
-import dev.ghostlov3r.beengine.form.Form;
-import dev.ghostlov3r.beengine.form.SimpleForm;
-import dev.ghostlov3r.beengine.item.Items;
-import dev.ghostlov3r.beengine.utils.TextFormat;
+import beengine.form.CustomForm;
+import beengine.form.Form;
+import beengine.form.SimpleForm;
+import beengine.util.TextFormat;
 import lord.core.Lord;
 import lord.core.gamer.Gamer;
 

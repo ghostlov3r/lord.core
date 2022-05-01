@@ -1,12 +1,12 @@
 package lord.core.game.rank;
 
-import dev.ghostlov3r.beengine.utils.DiskMap;
+import beengine.util.DiskMap;
+import fastutil.set.impl.RefHashSet;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lord.core.Lord;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 
 /**
  * Менеджер рангов
@@ -18,9 +18,7 @@ public class RankMan extends DiskMap<Integer, Rank> {
 	public boolean usingForms;
 	
 	private Rank defaultRank;
-	
-	private Rank lastRank;
-	
+
 	public RankMan () {
 		super(Lord.instance.dataPath().resolve("ranks"), Rank.class, Integer.class);
 		usingForms = false;
@@ -39,28 +37,25 @@ public class RankMan extends DiskMap<Integer, Rank> {
 	
 	/** Добавляет рангам права предыдущих */
 	private void recalculatePermissions () {
-		Rank rank = defaultRank();
-		while (rank != null) {
-			var perms = new ArrayList<String>();
-			if (rank.permissions() != null) {
-				perms.addAll(Arrays.asList(rank.permissions()));
+		values().forEach(rank -> {
+			if (!rank.hasPrev()) {
+				Rank next;
+				while (rank.hasNext()) {
+					next = rank.getNext();
+					next.permissions.addAll(rank.permissions);
+					rank = next;
+				}
 			}
-			var next = rank.getNext();
-			if (next != null && next.permissions() != null) {
-				perms.addAll(Arrays.asList(next.permissions()));
-			}
-			rank.permissions = perms.toArray(new String[0]);
-			rank = next;
-		}
+		});
 	}
 	
 	/** Создает пример ранга по умолчанию */
 	public Rank createDefault () {
 		return new Rank(this, 0)
-					   .prevName(null)     .nextName(null)
+					   .prevIdx(null)     .nextIdx(null)
 					   .isDefault(true)    .maxExp(1000)
 					   .moneyReward(0)     .rankText(null)
-					   .onGetMessage(null) .permissions(new String[] { "example", "example" });
+					   .onGetMessage(null) .permissions(new RefHashSet<>(List.of("example", "example")));
 	}
 	
 }

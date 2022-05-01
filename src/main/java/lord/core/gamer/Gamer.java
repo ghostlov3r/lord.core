@@ -1,22 +1,25 @@
 package lord.core.gamer;
 
-import dev.ghostlov3r.beengine.block.Position;
-import dev.ghostlov3r.beengine.entity.util.Location;
-import dev.ghostlov3r.beengine.form.Form;
-import dev.ghostlov3r.beengine.form.SimpleForm;
-import dev.ghostlov3r.beengine.item.Item;
-import dev.ghostlov3r.beengine.player.GameMode;
-import dev.ghostlov3r.beengine.player.Player;
-import dev.ghostlov3r.beengine.player.PlayerInfo;
-import dev.ghostlov3r.beengine.scheduler.Scheduler;
-import dev.ghostlov3r.beengine.utils.TextFormat;
-import dev.ghostlov3r.beengine.world.Sound;
-import dev.ghostlov3r.beengine.world.World;
-import dev.ghostlov3r.math.Vector3;
-import dev.ghostlov3r.minecraft.MinecraftSession;
-import dev.ghostlov3r.minecraft.data.skin.SkinData;
-import dev.ghostlov3r.minecraft.protocol.v113.packet.WorldSoundEvent;
-import dev.ghostlov3r.nbt.NbtMap;
+import beengine.block.Position;
+import beengine.entity.util.Location;
+import beengine.form.Form;
+import beengine.form.SimpleForm;
+import beengine.item.Item;
+import beengine.minecraft.MinecraftSession;
+import beengine.minecraft.data.skin.SkinData;
+import beengine.minecraft.protocol.v113.packet.WorldSoundEvent;
+import beengine.nbt.NbtMap;
+import beengine.nbt.NbtType;
+import beengine.player.GameMode;
+import beengine.player.Player;
+import beengine.player.PlayerInfo;
+import beengine.scheduler.Scheduler;
+import beengine.util.TextFormat;
+import beengine.util.math.Vector3;
+import beengine.world.Sound;
+import beengine.world.World;
+import fastutil.set.ShortSet;
+import fastutil.set.impl.ShortHashSet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -47,13 +50,15 @@ public class Gamer extends Player {
 	
 	private Group group;
 	private Rank rank;
+	private ShortSet gotRankRewards;
 
 	/* ======================================================================================= */
 
 	public static final long NOT_MUTED = -1;
 	public static final long MUTED_FOREVER = 0;
 
-	@Setter protected int money;
+	protected int goldMoney;
+	protected int silverMoney;
 	protected int rankExp;
 	@Setter protected int playedMinutes; // todo
 
@@ -119,6 +124,9 @@ public class Gamer extends Player {
 	@Override
 	protected void initEntity() {
 		super.initEntity();
+		if (gotRankRewards == null) {
+			gotRankRewards = new ShortHashSet();
+		}
 		setRank(rankIdx);
 		setGroup(groupName);
 	}
@@ -147,7 +155,8 @@ public class Gamer extends Player {
 		nbt.setString("group", group.key());
 		nbt.setInt("rank", rank.key());
 		nbt.setInt("rankExp", rankExp);
-		nbt.setInt("money", money);
+		nbt.setInt("goldMoney", goldMoney);
+		nbt.setInt("silverMoney", silverMoney);
 		nbt.setInt("playedMinutes", playedMinutes);
 		if (email != null) {
 			nbt.setString("email", email);
@@ -162,6 +171,9 @@ public class Gamer extends Player {
 			nbt.setLong("lastAuthMillis", lastAuthMillis);
 			nbt.setString("lastAuthIP", lastAuthIP);
 		}
+		if (!gotRankRewards.isEmpty()) {
+			nbt.setList("gotRankRewards", NbtType.SHORT, gotRankRewards);
+		}
 	}
 
 	private int rankIdx;
@@ -169,7 +181,8 @@ public class Gamer extends Player {
 
 	public void readUnionData(NbtMap nbt) {
 		rankExp = nbt.getInt("rankExp", 0);
-		money = nbt.getInt("money", 0);
+		goldMoney = nbt.getInt("goldMoney", 0);
+		silverMoney = nbt.getInt("silverMoney", 0);
 		playedMinutes = nbt.getInt("playedMinutes", 0);
 
 		email = nbt.getString("email", null);
@@ -181,6 +194,8 @@ public class Gamer extends Player {
 		lastAuthIP = nbt.getString("lastAuthIP", null);
 		lastAuthMillis = nbt.getLong("lastAuthMillis", 0);
 
+		gotRankRewards = new ShortHashSet(nbt.getList("gotRankRewards", NbtType.SHORT, List.of()));
+
 		authChecked = isAuthorizedAutomatically();
 	}
 
@@ -189,6 +204,7 @@ public class Gamer extends Player {
 		if (saver != null) {
 			NbtMap.Builder builder = NbtMap.builder();
 			writeUnionData(builder);
+			logger().debug("Calling saver.writeData from saveUnionData");
 			saver.writeData(name(), builder.build());
 		}
 	}
@@ -208,7 +224,7 @@ public class Gamer extends Player {
 		}
 		authChecked = true;
 		lastAuthMillis = System.currentTimeMillis();
-		lastAuthIP = session().address().getAddress().getHostName();
+		lastAuthIP = session().address().getAddress().getHostAddress();
 		saveUnionData();
 
 		if (!realData.isEmpty()) {
@@ -326,6 +342,10 @@ public class Gamer extends Player {
 	 * @param exp Количество опыта
 	 */
 	public void addRankExp (int exp) {
+		if (exp < 1) {
+			return;
+		}
+
 		int maxExp = rank.maxExp();
 		int newExp = rankExp + exp;
 		
@@ -339,7 +359,8 @@ public class Gamer extends Player {
 		}
 		Rank newRank = rank.getNext();
 
-		this.setRank(newRank);
+		setRank(newRank);
+		rankExp = 0;
 		addRankExp(newExp - maxExp); // Добавление остатка при достижении нового ранга
 	}
 	
@@ -411,7 +432,7 @@ public class Gamer extends Player {
 		this.setImmobile(true);
 		this.sendTitle("§cПроизошла смерть", "Вы будете возвращены на точку возрождения", 10, 30, 30);
 		
-		int remove = this.money / 20;
+		int remove = this.goldMoney / 20;
 		if (remove > 0) {
 			this.removeMoney(remove);
 			this.sendMessage(Lord.instance.config().getPrefix() + "Потеряно " + remove + " Koins");
@@ -427,7 +448,7 @@ public class Gamer extends Player {
 	}
 
 	public void removeMoney(int money) {
-		this.money -= money;
+		this.goldMoney -= money;
 	}
 
 	public LordNpc createNpc() {
@@ -466,7 +487,77 @@ public class Gamer extends Player {
 	}
 
 	public void showGiftMenu () {
-		sendForm(Form.simple());
+		SimpleForm form = Form.simple();
+		form.title("Награды");
+		form.button("Награда за повышение уровня", __ -> showRankRewards());
+		sendForm(form);
+	}
+
+	public void showRankRewards () {
+		SimpleForm form = Form.simple();
+		form.title("Награды за уровень");
+		Rank rank = Lord.ranks.defaultRank();
+		while (rank != null) {
+			Rank r = rank;
+			form.button("Уровень "+rank.key()+ (
+				rank.key() > this.rank.key()
+					? TextFormat.RED+" (Не доступно)"
+					: (
+						gotRankRewards.contains(rank.key().shortValue())
+							? TextFormat.GRAY + " (Получено)"
+							: TextFormat.AQUA + " ЗАБРАТЬ!"
+					)
+			), __ -> doGetRewardFor(r));
+			rank = rank.getNext();
+		}
+		sendForm(form);
+	}
+
+	public void doGetRewardFor (Rank rank) {
+		if (rank.key() > this.rank.key()) {
+			sendMessage(TextFormat.RED+"Повысь свой уровень до "+rank.key()+"!");
+		}
+		else if (!gotRankRewards.add(rank.key().shortValue())) {
+			sendMessage(TextFormat.GOLD+"Награда за "+rank.key()+" уровень уже получена");
+		}
+		else {
+			actuallyGetRewardFor(rank);
+		}
+	}
+
+	protected void actuallyGetRewardFor (Rank rank) {
+		if (rank.moneyReward() > 0) {
+			addSilverMoney(rank.moneyReward());
+			sendMessage("Получено "+rank.moneyReward()+" серебра");
+		}
+		if (rank.goldReward() > 0) {
+			addGoldMoney(rank.goldReward());
+			sendMessage("Получено "+rank.goldReward()+" золота");
+		}
+	}
+
+	public void setSilverMoney(int silverMoney) {
+		this.silverMoney = silverMoney;
+	}
+
+	public void setGoldMoney(int goldMoney) {
+		this.goldMoney = goldMoney;
+	}
+
+	public void addSilverMoney (int amount) {
+		setSilverMoney(silverMoney() + amount);
+	}
+
+	public void addGoldMoney (int amount) {
+		setGoldMoney(goldMoney() + amount);
+	}
+
+	public void removeSilverMoney (int amount) {
+		addSilverMoney(-amount);
+	}
+
+	public void removeGoldMoney (int amount) {
+		addGoldMoney(-amount);
 	}
 
 	public void incrementPlayedMinutes () {

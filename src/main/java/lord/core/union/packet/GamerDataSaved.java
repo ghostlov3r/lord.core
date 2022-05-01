@@ -1,7 +1,6 @@
 package lord.core.union.packet;
 
-import dev.ghostlov3r.raknet.PacketUtils;
-import io.netty.buffer.ByteBuf;
+import beengine.util.binary.NioBuffer;
 import lord.core.union.UnionServer;
 
 public class GamerDataSaved extends UnionPacket{
@@ -14,13 +13,13 @@ public class GamerDataSaved extends UnionPacket{
 	}
 
 	@Override
-	public void encode(ByteBuf out) {
-		PacketUtils.writeString(out, name);
+	public void encode(NioBuffer out) {
+		out.writeString(name);
 	}
 
 	@Override
-	public void decode(ByteBuf in) {
-		name = PacketUtils.readString(in);
+	public void decode(NioBuffer in) {
+		name = in.readString();
 	}
 
 	@Override

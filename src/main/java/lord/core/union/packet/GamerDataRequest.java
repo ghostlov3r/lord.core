@@ -1,7 +1,6 @@
 package lord.core.union.packet;
 
-import dev.ghostlov3r.raknet.PacketUtils;
-import io.netty.buffer.ByteBuf;
+import beengine.util.binary.NioBuffer;
 import lombok.ToString;
 import lord.core.union.UnionServer;
 
@@ -20,17 +19,17 @@ public class GamerDataRequest extends UnionPacket {
 	}
 
 	@Override
-	public void encode(ByteBuf out) {
+	public void encode(NioBuffer out) {
 		out.writeLong(requestId);
-		PacketUtils.writeString(out, name);
-		PacketUtils.writeAddress(out, address);
+		out.writeString(name);
+		out.writeAddress(address);
 	}
 
 	@Override
-	public void decode(ByteBuf in) {
+	public void decode(NioBuffer in) {
 		requestId = in.readLong();
-		name = PacketUtils.readString(in);
-		address = PacketUtils.readAddress(in);
+		name = in.readString();
+		address = in.readAddress();
 	}
 
 	@Override

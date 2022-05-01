@@ -1,6 +1,6 @@
 package lord.core.game.warp;
 
-import dev.ghostlov3r.beengine.utils.config.Config;
+import beengine.util.config.Config;
 import lombok.Getter;
 
 import java.util.ArrayList;

@@ -1,7 +1,7 @@
 package lord.core.game.achieve;
 
-import dev.ghostlov3r.beengine.utils.DiskMap;
-import dev.ghostlov3r.math.FRand;
+import beengine.util.DiskMap;
+import beengine.util.math.FRand;
 import lord.core.Lord;
 
 /**

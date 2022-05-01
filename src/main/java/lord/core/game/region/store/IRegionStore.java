@@ -1,6 +1,6 @@
 package lord.core.game.region.store;
 
-import dev.ghostlov3r.math.Vector3;
+import beengine.util.math.Vector3;
 import lord.core.game.region.Region;
 
 import java.util.function.Consumer;

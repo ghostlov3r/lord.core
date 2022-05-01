@@ -1,8 +1,8 @@
 package lord.core.util;
 
-import dev.ghostlov3r.beengine.command.Command;
-import dev.ghostlov3r.beengine.command.CommandSender;
-import dev.ghostlov3r.beengine.utils.TextFormat;
+import beengine.command.Command;
+import beengine.command.CommandSender;
+import beengine.util.TextFormat;
 import lord.core.gamer.Gamer;
 
 public abstract class LordCommand extends Command {

@@ -1,11 +1,13 @@
 package lord.core.game.group;
 
-import dev.ghostlov3r.beengine.utils.DiskEntry;
-import dev.ghostlov3r.beengine.utils.DiskMap;
+import beengine.util.DiskEntry;
+import beengine.util.DiskMap;
+import fastutil.set.impl.ObjectHashSet;
 import lombok.Getter;
 import lord.core.gamer.Gamer;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 public class Group extends DiskEntry<String> {
@@ -15,7 +17,7 @@ public class Group extends DiskEntry<String> {
 	/** Имя группы-родителя   */  @Nullable
 	protected String parent;
 	/** Является ли дефолтной */  protected boolean isDefault;
-	/** Права                 */  protected List<String> permissions;
+	/** Права                 */  protected Set<String> permissions = new ObjectHashSet<>();
 	/** Прочая информация     */  protected GroupInfo info;
 
 	public Group(DiskMap<String, ?> map, String key) {

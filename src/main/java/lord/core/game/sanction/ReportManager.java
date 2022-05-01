@@ -1,6 +1,6 @@
 package lord.core.game.sanction;
 
-import dev.ghostlov3r.beengine.utils.DiskMap;
+import beengine.util.DiskMap;
 import lord.core.Lord;
 
 public class ReportManager extends DiskMap<String, Report> {

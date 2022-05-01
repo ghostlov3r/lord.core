@@ -1,7 +1,7 @@
 package lord.core.util;
 
-import dev.ghostlov3r.beengine.player.Player;
-import dev.ghostlov3r.math.FMath;
+import beengine.player.Player;
+import beengine.util.math.FMath;
 
 public class BehaviorLookAtPlayer {
 

@@ -1,12 +1,12 @@
 package lord.core.union;
 
-import dev.ghostlov3r.beengine.Server;
-import dev.ghostlov3r.beengine.network.RawPacketHandler;
-import dev.ghostlov3r.beengine.scheduler.AsyncTask;
-import dev.ghostlov3r.beengine.scheduler.Scheduler;
-import dev.ghostlov3r.beengine.scheduler.TaskControl;
-import dev.ghostlov3r.beengine.utils.config.Config;
-import io.netty.buffer.ByteBuf;
+import beengine.Server;
+import beengine.network.RawPacketHandler;
+import beengine.scheduler.AsyncTask;
+import beengine.scheduler.Scheduler;
+import beengine.scheduler.TaskControl;
+import beengine.util.binary.NioBuffer;
+import beengine.util.config.Config;
 import lord.core.Lord;
 import lord.core.union.packet.*;
 
@@ -16,7 +16,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.IntPredicate;
 import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 
@@ -171,23 +170,23 @@ public class UnionHandler implements RawPacketHandler {
 	}
 
 	@Override
-	public boolean isValidPacket(ByteBuf buf) {
+	public boolean isValidPacket(NioBuffer buf) {
 		if (!buf.isReadable(2)) {
 			return false;
 		}
-		int id = buf.getUnsignedByte(buf.readerIndex());
+		int id = buf.getUByte(buf.readerIdx());
 		return id == PacketIds.RAKNET_ID;
 	}
 
 	@Override
-	public boolean handle(Consumer<ByteBuf> reply, InetSocketAddress address, ByteBuf buf) {
+	public boolean handle(Consumer<NioBuffer> reply, InetSocketAddress address, NioBuffer buf) {
 		UnionServer server = getServer(address);
 		if (server == null) {
 			return false;
 		}
 
-		buf.skipBytes(1);
-		int id = buf.readUnsignedByte();
+		buf.skipReading(1);
+		int id = buf.readUByte();
 		UnionPacket packet = packets[id];
 		if (packet == null) {
 			return false;

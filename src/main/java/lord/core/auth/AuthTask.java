@@ -1,6 +1,6 @@
 package lord.core.auth;
 
-import dev.ghostlov3r.beengine.scheduler.Task;
+import beengine.scheduler.Task;
 import lord.core.Lord;
 import lord.core.gamer.Gamer;
 

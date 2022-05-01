@@ -1,13 +1,13 @@
 package lord.core.auth;
 
-import dev.ghostlov3r.beengine.Server;
-import dev.ghostlov3r.beengine.scheduler.AsyncTask;
-import dev.ghostlov3r.beengine.scheduler.Scheduler;
-import dev.ghostlov3r.beengine.utils.TextFormat;
-import dev.ghostlov3r.beengine.world.GenerationOptions;
-import dev.ghostlov3r.beengine.world.World;
-import dev.ghostlov3r.beengine.world.generator.FlatGenerator;
-import dev.ghostlov3r.common.Utils;
+import beengine.Server;
+import beengine.scheduler.AsyncTask;
+import beengine.scheduler.Scheduler;
+import beengine.util.TextFormat;
+import beengine.util.Utils;
+import beengine.world.GenerationOptions;
+import beengine.world.World;
+import beengine.world.generator.FlatGenerator;
 import lord.core.Lord;
 import lord.core.gamer.Gamer;
 
@@ -30,7 +30,7 @@ public class Auth {
 	public Auth () {
 		var options = new GenerationOptions();
 		options.name = Lord.instance.config().authWorld;
-		options.generator = FlatGenerator.class;
+		options.generator = "flat";
 		world = World.generate(options).result();
 	}
 
@@ -41,6 +41,8 @@ public class Auth {
 
 	/** Обработка данных для входа в аккаунт */
 	public void handleLoginData (Gamer player, String password) {
+		player.logger().debug("Calling handleLoginData");
+
 		if (player.isSneaking()) {
 			player.setSneaking(false);
 		}

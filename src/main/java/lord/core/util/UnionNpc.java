@@ -1,9 +1,9 @@
 package lord.core.util;
 
-import dev.ghostlov3r.beengine.entity.util.Location;
-import dev.ghostlov3r.beengine.utils.TextFormat;
-import dev.ghostlov3r.minecraft.data.skin.SkinData;
-import dev.ghostlov3r.nbt.NbtMap;
+import beengine.entity.util.Location;
+import beengine.minecraft.data.skin.SkinData;
+import beengine.nbt.NbtMap;
+import beengine.util.TextFormat;
 import lord.core.Lord;
 import lord.core.gamer.Gamer;
 import lord.core.union.UnionServer;

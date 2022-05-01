@@ -1,8 +1,8 @@
 package lord.core.game.warp;
 
-import dev.ghostlov3r.beengine.form.CustomForm;
-import dev.ghostlov3r.beengine.form.Form;
-import dev.ghostlov3r.beengine.form.SimpleForm;
+import beengine.form.CustomForm;
+import beengine.form.Form;
+import beengine.form.SimpleForm;
 import lombok.RequiredArgsConstructor;
 import lord.core.gamer.Gamer;
 

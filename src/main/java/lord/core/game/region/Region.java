@@ -1,7 +1,6 @@
 package lord.core.game.region;
 
-
-import dev.ghostlov3r.beengine.utils.config.Config;
+import beengine.util.config.Config;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

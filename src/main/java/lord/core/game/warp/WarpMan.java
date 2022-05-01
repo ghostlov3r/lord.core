@@ -1,9 +1,9 @@
 package lord.core.game.warp;
 
-import dev.ghostlov3r.beengine.entity.util.Location;
-import dev.ghostlov3r.beengine.player.Player;
-import dev.ghostlov3r.beengine.utils.DiskMap;
-import dev.ghostlov3r.beengine.utils.TextFormat;
+import beengine.entity.util.Location;
+import beengine.player.Player;
+import beengine.util.DiskMap;
+import beengine.util.TextFormat;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;

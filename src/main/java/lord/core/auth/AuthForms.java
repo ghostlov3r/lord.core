@@ -1,9 +1,8 @@
 package lord.core.auth;
 
-import dev.ghostlov3r.beengine.form.CustomForm;
-import dev.ghostlov3r.beengine.form.Form;
-import dev.ghostlov3r.beengine.scheduler.Scheduler;
-import dev.ghostlov3r.beengine.utils.TextFormat;
+import beengine.form.CustomForm;
+import beengine.form.Form;
+import beengine.util.TextFormat;
 import lombok.RequiredArgsConstructor;
 import lord.core.gamer.Gamer;
 

@@ -1,8 +1,7 @@
 package lord.core.union.packet;
 
-import dev.ghostlov3r.binary.OutputBuffer;
-import dev.ghostlov3r.nbt.*;
-import io.netty.buffer.ByteBuf;
+import beengine.nbt.NbtMap;
+import beengine.util.binary.NioBuffer;
 import lombok.ToString;
 import lord.core.union.UnionServer;
 
@@ -26,7 +25,7 @@ public class GamerDataResponse extends UnionPacket {
 	}
 
 	@Override
-	public void encode(ByteBuf out) {
+	public void encode(NioBuffer out) {
 		out.writeLong(requestId);
 		out.writeByte(status.ordinal());
 		if (status == Status.ALLOW) {
@@ -38,9 +37,9 @@ public class GamerDataResponse extends UnionPacket {
 	}
 
 	@Override
-	public void decode(ByteBuf in) {
+	public void decode(NioBuffer in) {
 		requestId = in.readLong();
-		status = Status.values()[in.readUnsignedByte()];
+		status = Status.values()[in.readUByte()];
 		if (status == Status.ALLOW) {
 			gamerData = readNbt(in);
 		}

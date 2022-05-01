@@ -1,6 +1,6 @@
 package lord.core.union;
 
-import dev.ghostlov3r.nbt.NbtMap;
+import beengine.nbt.NbtMap;
 
 public class UnionDataProvider {
 

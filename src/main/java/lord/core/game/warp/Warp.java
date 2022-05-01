@@ -1,11 +1,11 @@
 package lord.core.game.warp;
 
-import dev.ghostlov3r.beengine.Server;
-import dev.ghostlov3r.beengine.entity.util.Location;
-import dev.ghostlov3r.beengine.player.Player;
-import dev.ghostlov3r.beengine.utils.DiskEntry;
-import dev.ghostlov3r.beengine.utils.DiskMap;
-import dev.ghostlov3r.beengine.world.World;
+import beengine.Server;
+import beengine.entity.util.Location;
+import beengine.player.Player;
+import beengine.util.DiskEntry;
+import beengine.util.DiskMap;
+import beengine.world.World;
 import lombok.Getter;
 import java.util.List;
 

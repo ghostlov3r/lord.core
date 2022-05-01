@@ -1,6 +1,6 @@
 package lord.core.game.kit;
 
-import dev.ghostlov3r.beengine.utils.config.Config;
+import beengine.util.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 

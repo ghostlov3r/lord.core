@@ -1,6 +1,6 @@
 package lord.core.union.packet;
 
-import io.netty.buffer.ByteBuf;
+import beengine.util.binary.NioBuffer;
 import lord.core.union.UnionServer;
 
 public class UpdateStatus extends UnionPacket {
@@ -14,7 +14,7 @@ public class UpdateStatus extends UnionPacket {
 	}
 
 	@Override
-	public void encode(ByteBuf out) {
+	public void encode(NioBuffer out) {
 		out.writeBoolean(isOnline);
 		if (isOnline) {
 			out.writeShort(onlineCount);
@@ -22,7 +22,7 @@ public class UpdateStatus extends UnionPacket {
 	}
 
 	@Override
-	public void decode(ByteBuf in) {
+	public void decode(NioBuffer in) {
 		isOnline = in.readBoolean();
 		if (isOnline) {
 			onlineCount = in.readShort();

@@ -1,7 +1,7 @@
 package lord.core;
 
+import beengine.util.config.Config;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import dev.ghostlov3r.beengine.utils.config.Config;
 import lombok.Getter;
 
 import java.util.ArrayList;

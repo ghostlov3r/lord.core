@@ -1,9 +1,9 @@
 package lord.core.game;
 
-import dev.ghostlov3r.beengine.entity.util.Location;
-import dev.ghostlov3r.beengine.player.Player;
-import dev.ghostlov3r.beengine.scheduler.Scheduler;
-import dev.ghostlov3r.beengine.scheduler.Task;
+import beengine.entity.util.Location;
+import beengine.player.Player;
+import beengine.scheduler.Scheduler;
+import beengine.scheduler.Task;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lord.core.game.warp.Warp;

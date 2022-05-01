@@ -1,6 +1,6 @@
 package lord.core.auth;
 
-import dev.ghostlov3r.beengine.player.Player;
+import beengine.player.Player;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;

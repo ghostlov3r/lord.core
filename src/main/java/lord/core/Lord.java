@@ -1,27 +1,29 @@
 package lord.core;
 
-import dev.ghostlov3r.beengine.Server;
-import dev.ghostlov3r.beengine.block.Block;
-import dev.ghostlov3r.beengine.command.Command;
-import dev.ghostlov3r.beengine.command.CommandMap;
-import dev.ghostlov3r.beengine.entity.EntityFactory;
-import dev.ghostlov3r.beengine.event.EventListener;
-import dev.ghostlov3r.beengine.event.EventManager;
-import dev.ghostlov3r.beengine.event.block.BlockBreakEvent;
-import dev.ghostlov3r.beengine.event.block.BlockPlaceEvent;
-import dev.ghostlov3r.beengine.event.entity.EntityDamageEvent;
-import dev.ghostlov3r.beengine.event.inventory.InventoryTransactionEvent;
-import dev.ghostlov3r.beengine.event.player.*;
-import dev.ghostlov3r.beengine.item.LegacyStringToItemParser;
-import dev.ghostlov3r.beengine.player.Player;
-import dev.ghostlov3r.beengine.plugin.AbstractPlugin;
-import dev.ghostlov3r.beengine.scheduler.Scheduler;
-import dev.ghostlov3r.beengine.utils.TextFormat;
-import dev.ghostlov3r.beengine.world.generator.GeneratorManager;
-import dev.ghostlov3r.beengine.world.generator.VoidGenerator;
-import dev.ghostlov3r.log.Logger;
-import dev.ghostlov3r.math.AxisAlignedBB;
-import dev.ghostlov3r.math.Vector3;
+import beengine.Server;
+import beengine.block.Block;
+import beengine.command.Command;
+import beengine.command.CommandMap;
+import beengine.entity.EntityFactory;
+import beengine.event.EventListener;
+import beengine.event.EventManager;
+import beengine.event.block.BlockBreakEvent;
+import beengine.event.block.BlockPlaceEvent;
+import beengine.event.entity.EntityDamageEvent;
+import beengine.event.inventory.InventoryTransactionEvent;
+import beengine.event.player.*;
+import beengine.event.server.QueryRegenerateEvent;
+import beengine.item.LegacyStringToItemParser;
+import beengine.player.Player;
+import beengine.plugin.AbstractPlugin;
+import beengine.scheduler.Scheduler;
+import beengine.util.TextFormat;
+import beengine.util.log.Logger;
+import beengine.util.math.AxisAlignedBB;
+import beengine.util.math.Vector3;
+import beengine.world.World;
+import beengine.world.generator.Generator;
+import beengine.world.generator.VoidGenerator;
 import lord.core.auth.Auth;
 import lord.core.auth.RegisterData;
 import lord.core.game.Teleport;
@@ -58,7 +60,7 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 		log = this.logger();
 		config().save();
 		// Чтобы юзать флэт генератор потребуются соответствующие хаки, как и этот
-		GeneratorManager.addGenerator(VoidGenerator.class, "flat", true);
+		Generator.register(VoidGenerator.class, "flat", true);
 		registerEntities();
 		Server.commandMap().register("npc", new LordNpcCommand());
 		groups = new GroupMan();
@@ -136,6 +138,25 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 			}
 			return true;
 		});
+
+		registerCommand("addexp", ((s, args) -> {
+			Gamer target = s instanceof Gamer ? (Gamer) s : null;
+			int cnt = Integer.parseInt(args[0]);
+			if (args.length > 1) {
+				target = (Gamer) Server.getPlayer(args[1]);
+			}
+			if (target == null) {
+				s.sendMessage("Player not found");
+			}
+			else if (cnt < 1) {
+				s.sendMessage("Count < 1");
+			}
+			else {
+				target.addRankExp(cnt);
+				s.sendMessage("Added "+cnt+" exp to "+target.name());
+			}
+			return true;
+		}));
 	}
 
 	private void registerEntities () {
@@ -171,6 +192,7 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 	public void onPlayerQuit(PlayerQuitEvent<Gamer> event) {
 		event.setQuitMessage("");
 		editor.remove(event.player());
+		event.player().saveUnionData();
 	}
 
 	@Override
@@ -293,7 +315,12 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 			if (!gamer.isAuthorized()) {
 				event.cancel();
 				if (event.cause() == EntityDamageEvent.Cause.VOID) {
-					Scheduler.delay(1, () -> gamer.teleport(gamer.world().getSpawnPosition().addY(1)));
+					Scheduler.delay(1, () -> gamer.teleport(gamer.world().getSpawnPosition().addY(1), () -> {
+						// Защита от почти невозможного кейса
+						if (gamer.authChecked && gamer.world() == auth.world) {
+							gamer.teleport(World.defaultWorld().getSpawnPosition());
+						}
+					}));
 				}
 			}
 		}
@@ -307,5 +334,12 @@ public class Lord extends AbstractPlugin<LordConfig> implements EventListener<Ga
 				event.cancel();
 			}
 		}
+	}
+
+	@Override
+	public void onQueryRegenerate(QueryRegenerateEvent event) {
+		event.getQueryInfo().setListPlugins(false);
+		event.getQueryInfo().setWorld("LORD");
+		event.getQueryInfo().setPlayerList(Player.EMPTY_ARRAY);
 	}
 }

@@ -1,17 +1,17 @@
 package lord.core.util;
 
-import dev.ghostlov3r.beengine.entity.obj.ItemEntity;
-import dev.ghostlov3r.beengine.entity.util.Location;
-import dev.ghostlov3r.beengine.item.Item;
-import dev.ghostlov3r.beengine.item.Items;
-import dev.ghostlov3r.beengine.scheduler.Scheduler;
-import dev.ghostlov3r.beengine.utils.TextFormat;
-import dev.ghostlov3r.beengine.world.Particle;
-import dev.ghostlov3r.beengine.world.Sound;
-import dev.ghostlov3r.math.FRand;
-import dev.ghostlov3r.math.Vector3;
-import dev.ghostlov3r.minecraft.data.skin.SkinData;
-import dev.ghostlov3r.nbt.NbtMap;
+import beengine.entity.obj.ItemEntity;
+import beengine.entity.util.Location;
+import beengine.item.Item;
+import beengine.item.Items;
+import beengine.minecraft.data.skin.SkinData;
+import beengine.nbt.NbtMap;
+import beengine.scheduler.Scheduler;
+import beengine.util.TextFormat;
+import beengine.util.math.FRand;
+import beengine.util.math.Vector3;
+import beengine.world.Particle;
+import beengine.world.Sound;
 import lord.core.gamer.Gamer;
 
 public class MainGiftNpc extends LordNpc {
@@ -61,6 +61,9 @@ public class MainGiftNpc extends LordNpc {
 	};
 
 	private void throwItems () {
+		if (world.unsafe().players().isEmpty()) {
+			return;
+		}
 		for (int i = 0; i < ITEMS.length; i++) {
 			Item item = ITEMS[i].clone();
 
@@ -78,7 +81,7 @@ public class MainGiftNpc extends LordNpc {
 			broadcastSound(Sound.XP_COLLECT);
 			float y = this.y + 0.3f;
 			for (int i = 0; i < 3; i++) {
-				world.addParticle(FRand.nextSignedFloat(random) * 1.5f + this.x, y, FRand.nextSignedFloat(random) * 1.5f + this.z, Particle.LAVA_DRIP);
+				world.addParticle(FRand.nextSignedFloat(random) * 1.5f + this.x, y, FRand.nextSignedFloat(random) * 1.5f + this.z, Particle.LAVA);
 			}
 		});
 	}

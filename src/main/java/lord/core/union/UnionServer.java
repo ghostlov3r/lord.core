@@ -1,10 +1,9 @@
 package lord.core.union;
 
-import dev.ghostlov3r.beengine.Beengine;
-import dev.ghostlov3r.beengine.Server;
-import dev.ghostlov3r.common.buf.Allocator;
-import dev.ghostlov3r.log.Logger;
-import io.netty.buffer.ByteBuf;
+import beengine.Beengine;
+import beengine.Server;
+import beengine.util.binary.NioBuffer;
+import beengine.util.log.Logger;
 import lombok.SneakyThrows;
 import lord.core.union.packet.*;
 
@@ -31,7 +30,7 @@ public class UnionServer {
 	}
 
 	public void sendPacket (UnionPacket packet) {
-		ByteBuf buf = Allocator.ioBuffer();
+		NioBuffer buf = NioBuffer.getPooled();
 		buf.writeByte(PacketIds.RAKNET_ID);
 		buf.writeByte(packet.id());
 		packet.encode(buf);

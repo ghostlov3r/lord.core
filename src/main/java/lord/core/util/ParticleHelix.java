@@ -1,8 +1,8 @@
 package lord.core.util;
 
-import dev.ghostlov3r.beengine.block.Position;
-import dev.ghostlov3r.beengine.scheduler.Task;
-import dev.ghostlov3r.beengine.world.Particle;
+import beengine.block.Position;
+import beengine.scheduler.Task;
+import beengine.world.Particle;
 
 public class ParticleHelix extends Task {
 

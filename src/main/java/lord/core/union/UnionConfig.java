@@ -1,7 +1,7 @@
 package lord.core.union;
 
-import dev.ghostlov3r.beengine.utils.config.Config;
-import dev.ghostlov3r.beengine.utils.config.Name;
+import beengine.util.config.Config;
+import beengine.util.config.Name;
 
 import java.util.ArrayList;
 import java.util.HashMap;
